@@ -1,9 +1,10 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { CourseParticipationEntity } from './courseParticipation.entity';
 import { AttendanceResultEntity } from './attendanceResult.entity';
+import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
 
 @Entity('t_student')
-export class StudentEntity {
+export class StudentEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 

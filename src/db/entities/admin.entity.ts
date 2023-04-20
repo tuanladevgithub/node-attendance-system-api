@@ -1,7 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
 
 @Entity('t_admin')
-export class AdminEntity {
+export class AdminEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 

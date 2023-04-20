@@ -11,9 +11,10 @@ import { CourseParticipationEntity } from './courseParticipation.entity';
 import { AttendanceSessionEntity } from './attendanceSession.entity';
 import { AttendanceStatusEntity } from './attendanceStatus.entity';
 import { AttendanceSettingEntity } from './attendanceSetting.entity';
+import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
 
 @Entity('t_course')
-export class CourseEntity {
+export class CourseEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 

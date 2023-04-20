@@ -7,20 +7,24 @@ import {
 } from 'typeorm';
 import { CourseEntity } from './course.entity';
 import { AttendanceResultEntity } from './attendanceResult.entity';
+import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
 
 @Entity('t_attendance_session')
-export class AttendanceSessionEntity {
+export class AttendanceSessionEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 
   @Column({ type: 'int', name: 't_course_id' })
   t_course_id: number;
 
+  @Column({ type: 'varchar', name: 'password', nullable: true })
+  password?: string;
+
   @Column({ type: 'datetime', name: 'start_datetime' })
   start_datetime: Date;
 
-  @Column({ type: 'int', name: 'duration' })
-  duration: number;
+  @Column({ type: 'datetime', name: 'end_datetime' })
+  end_datetime: Date;
 
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;

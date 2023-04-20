@@ -15,8 +15,22 @@ export class AttendanceSettingEntity {
   @Column({ type: 'int', name: 't_course_id' })
   t_course_id: number;
 
+  @Column({
+    type: 'tinyint',
+    name: 'allow_student_record_attendance',
+    default: 1,
+  })
+  allow_student_record_attendance: number;
+
   @Column({ type: 'int', name: 'time_reset_qr', default: 15 })
   time_reset_qr: number;
+
+  @Column({
+    type: 'tinyint',
+    name: 'prevent_student_use_same_address',
+    default: 1,
+  })
+  prevent_student_use_same_address: number;
 
   /**
    * relations

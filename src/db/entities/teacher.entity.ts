@@ -1,8 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { CourseEntity } from './course.entity';
+import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
 
 @Entity('t_teacher')
-export class TeacherEntity {
+export class TeacherEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 
