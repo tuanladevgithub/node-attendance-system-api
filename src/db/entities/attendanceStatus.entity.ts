@@ -1,20 +1,20 @@
 import {
   Column,
   Entity,
-  ManyToOne,
+  // ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CourseEntity } from './course.entity';
+// import { CourseEntity } from './course.entity';
 import { AttendanceResultEntity } from './attendanceResult.entity';
 
-@Entity('t_attendance_status')
+@Entity('m_attendance_status')
 export class AttendanceStatusEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 
-  @Column({ type: 'int', name: 't_course_id' })
-  t_course_id: number;
+  // @Column({ type: 'int', name: 't_course_id' })
+  // t_course_id: number;
 
   @Column({ type: 'varchar', name: 'title' })
   title: string;
@@ -22,14 +22,17 @@ export class AttendanceStatusEntity {
   @Column({ type: 'varchar', name: 'acronym' })
   acronym: string;
 
-  @Column({ type: 'tinyint', name: 'auto_set', default: 0 })
-  auto_set: string;
+  @Column({ type: 'int', name: 'point' })
+  point: number;
+
+  @Column({ type: 'tinyint', name: 'auto_set_when_not_marked', default: 0 })
+  auto_set_when_not_marked: number;
 
   /**
    * relations
    */
-  @ManyToOne(() => CourseEntity, (course) => course.attendanceStatuses)
-  course?: CourseEntity;
+  // @ManyToOne(() => CourseEntity, (course) => course.attendanceStatuses)
+  // course?: CourseEntity;
 
   @OneToMany(() => AttendanceResultEntity, (result) => result.attendanceSession)
   attendanceResults?: AttendanceResultEntity[];

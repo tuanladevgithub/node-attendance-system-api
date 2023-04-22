@@ -17,13 +17,18 @@ export class AttendanceSettingEntity {
 
   @Column({
     type: 'tinyint',
-    name: 'allow_student_record_attendance',
+    name: 'allow_students_to_record_own_attendance',
     default: 1,
   })
-  allow_student_record_attendance: number;
+  allow_students_to_record_own_attendance: number;
 
-  @Column({ type: 'int', name: 'time_reset_qr', default: 15 })
-  time_reset_qr: number;
+  @Column({
+    type: 'int',
+    name: 'rotate_qrcode_interval_seconds',
+    nullable: true,
+    default: 15,
+  })
+  rotate_qrcode_interval_seconds?: number;
 
   @Column({
     type: 'tinyint',

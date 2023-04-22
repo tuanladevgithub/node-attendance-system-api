@@ -17,8 +17,11 @@ export class StudentEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'password' })
   password: string;
 
-  @Column({ type: 'varchar', name: 'name' })
-  name: string;
+  @Column({ type: 'varchar', name: 'last_name' })
+  last_name: string;
+
+  @Column({ type: 'varchar', name: 'first_name' })
+  first_name: string;
 
   @Column({ type: 'varchar', name: 'gender' })
   gender: string;
