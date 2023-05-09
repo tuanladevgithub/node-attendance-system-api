@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -40,6 +41,7 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
    * relations
    */
   @ManyToOne(() => TeacherEntity, (teacher) => teacher.courses)
+  @JoinColumn({ name: 't_teacher_id' })
   teacher?: TeacherEntity;
 
   @OneToMany(

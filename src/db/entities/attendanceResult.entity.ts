@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { AttendanceSessionEntity } from './attendanceSession.entity';
 import { StudentEntity } from './student.entity';
 import { AttendanceStatusEntity } from './attendanceStatus.entity';
@@ -27,11 +27,14 @@ export class AttendanceResultEntity {
     () => AttendanceSessionEntity,
     (session) => session.attendanceResults,
   )
+  @JoinColumn({ name: 't_attendance_session_id' })
   attendanceSession?: AttendanceSessionEntity;
 
   @ManyToOne(() => StudentEntity, (student) => student.attendanceResults)
+  @JoinColumn({ name: 't_student_id' })
   student?: StudentEntity;
 
   @ManyToOne(() => AttendanceStatusEntity, (status) => status.attendanceResults)
+  @JoinColumn({ name: 'm_attendance_status_id' })
   attendanceStatus?: AttendanceStatusEntity;
 }

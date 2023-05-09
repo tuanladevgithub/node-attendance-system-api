@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -33,6 +34,7 @@ export class AttendanceSessionEntity extends BaseCreateUpdateColumnEntity {
    * relations
    */
   @ManyToOne(() => CourseEntity, (course) => course.attendanceSessions)
+  @JoinColumn({ name: 't_course_id' })
   course?: CourseEntity;
 
   @OneToMany(() => AttendanceResultEntity, (result) => result.attendanceSession)

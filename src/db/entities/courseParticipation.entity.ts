@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { StudentEntity } from './student.entity';
 import { CourseEntity } from './course.entity';
 
@@ -14,8 +14,10 @@ export class CourseParticipationEntity {
    * relations
    */
   @ManyToOne(() => StudentEntity, (student) => student.courseParticipation)
+  @JoinColumn({ name: 't_student_id' })
   student?: StudentEntity;
 
   @ManyToOne(() => CourseEntity, (course) => course.courseParticipation)
+  @JoinColumn({ name: 't_course_id' })
   course?: CourseEntity;
 }

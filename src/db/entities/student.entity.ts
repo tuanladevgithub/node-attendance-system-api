@@ -26,7 +26,7 @@ export class StudentEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'gender' })
   gender: string;
 
-  @Column({ type: 'mediumtext', name: 'description', nullable: true })
+  @Column({ type: 'int', name: 'age', nullable: true })
   age?: number;
 
   /**

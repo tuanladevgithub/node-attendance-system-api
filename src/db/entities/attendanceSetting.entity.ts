@@ -37,6 +37,33 @@ export class AttendanceSettingEntity {
   })
   prevent_student_use_same_address: number;
 
+  @Column({
+    type: 'tinyint',
+    name: 'allow_send_email',
+    default: 1,
+  })
+  allow_send_email: number;
+
+  @Column({
+    type: 'varchar',
+    name: 'warning_email_subject',
+    default: 'Warning attendance email',
+  })
+  warning_email_subject: string;
+
+  @Column({ type: 'text', name: 'warning_email_content' })
+  warning_email_content: string;
+
+  @Column({
+    type: 'varchar',
+    name: 'notify_email_subject',
+    default: 'Notification attendance email',
+  })
+  notify_email_subject: string;
+
+  @Column({ type: 'text', name: 'notify_email_content' })
+  notify_email_content: string;
+
   /**
    * relations
    */
