@@ -1,12 +1,15 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'mysql',
-  host: '127.0.0.1',
-  port: 7777,
-  username: 'root',
-  password: 'rootpw',
-  database: 'node_attendance_system_db',
+  host: process.env.MYSQL_HOST,
+  port: parseInt(process.env.MYSQL_PORT || '3306'),
+  username: process.env.MYSQL_USERNAME,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
   entities: ['dist/db/entities/**/*.entity.{js,ts}'],
   migrations: ['dist/db/migrations/**/*.{js,ts}'],
   synchronize: false,
@@ -16,4 +19,5 @@ export const dataSourceOptions: DataSourceOptions = {
 };
 
 const dataSource = new DataSource(dataSourceOptions);
+
 export default dataSource;
