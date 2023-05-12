@@ -10,14 +10,17 @@ import {
 import { TeacherEntity } from './teacher.entity';
 import { CourseParticipationEntity } from './courseParticipation.entity';
 import { AttendanceSessionEntity } from './attendanceSession.entity';
-// import { AttendanceStatusEntity } from './attendanceStatus.entity';
 import { AttendanceSettingEntity } from './attendanceSetting.entity';
 import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
+import { SubjectEntity } from './subject.entity';
 
 @Entity('t_course')
 export class CourseEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
+
+  @Column({ type: 'int', name: 'm_subject_id' })
+  m_subject_id: number;
 
   @Column({ type: 'int', name: 't_teacher_id' })
   t_teacher_id: number;
@@ -40,6 +43,10 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
   /**
    * relations
    */
+  @ManyToOne(() => SubjectEntity, (subject) => subject.courses)
+  @JoinColumn({ name: 'm_subject_id' })
+  subject?: SubjectEntity;
+
   @ManyToOne(() => TeacherEntity, (teacher) => teacher.courses)
   @JoinColumn({ name: 't_teacher_id' })
   teacher?: TeacherEntity;
