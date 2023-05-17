@@ -25,6 +25,9 @@ export class TeacherEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'gender' })
   gender: string;
 
+  @Column({ type: 'varchar', name: 'phone_number', nullable: true })
+  phone_number?: string;
+
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;
 

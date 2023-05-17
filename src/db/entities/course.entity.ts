@@ -28,8 +28,8 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'course_code' })
   course_code: string;
 
-  @Column({ type: 'varchar', name: 'course_name' })
-  course_name: string;
+  // @Column({ type: 'varchar', name: 'course_name' })
+  // course_name: string;
 
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;

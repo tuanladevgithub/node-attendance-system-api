@@ -8,6 +8,4 @@ RUN yarn install
 
 COPY . .
 
-RUN yarn build
-
-CMD yarn migration:run && yarn start:dev
+CMD yarn build && yarn migration:run && yarn start
