@@ -1,6 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { CourseEntity } from './course.entity';
-import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
+import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 import { UserGender } from 'src/types/common.type';
 
 @Entity('t_teacher')

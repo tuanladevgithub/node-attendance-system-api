@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
+import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 
 @Entity('t_admin')
 export class AdminEntity extends BaseCreateUpdateColumnEntity {

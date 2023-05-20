@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { CourseParticipationEntity } from './courseParticipation.entity';
-import { AttendanceResultEntity } from './attendanceResult.entity';
-import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
+import { CourseParticipationEntity } from './course-participation.entity';
+import { AttendanceResultEntity } from './attendance-result.entity';
+import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 import { UserGender } from 'src/types/common.type';
 
 @Entity('t_student')

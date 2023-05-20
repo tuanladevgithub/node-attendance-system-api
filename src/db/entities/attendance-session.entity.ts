@@ -7,8 +7,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CourseEntity } from './course.entity';
-import { AttendanceResultEntity } from './attendanceResult.entity';
-import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
+import { AttendanceResultEntity } from './attendance-result.entity';
+import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 
 @Entity('t_attendance_session')
 export class AttendanceSessionEntity extends BaseCreateUpdateColumnEntity {

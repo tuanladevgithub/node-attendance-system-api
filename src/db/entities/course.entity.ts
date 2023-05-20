@@ -8,10 +8,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TeacherEntity } from './teacher.entity';
-import { CourseParticipationEntity } from './courseParticipation.entity';
-import { AttendanceSessionEntity } from './attendanceSession.entity';
-import { AttendanceSettingEntity } from './attendanceSetting.entity';
-import { BaseCreateUpdateColumnEntity } from './baseCreateUpdateColumn.entity';
+import { CourseParticipationEntity } from './course-participation.entity';
+import { AttendanceSessionEntity } from './attendance-session.entity';
+import { AttendanceSettingEntity } from './attendance-setting.entity';
+import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 import { SubjectEntity } from './subject.entity';
 
 @Entity('t_course')

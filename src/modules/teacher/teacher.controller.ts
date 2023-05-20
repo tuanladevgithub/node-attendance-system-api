@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { TeacherService } from './teacher.service';
 import { JwtPayload } from 'src/types/auth.type';
-import { TeacherAuthGuard } from '../auth/teacherAuth.guard';
+import { TeacherAuthGuard } from '../auth/teacher-auth.guard';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 
 @Controller('teacher')

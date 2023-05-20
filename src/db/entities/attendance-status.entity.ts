@@ -1,12 +1,5 @@
-import {
-  Column,
-  Entity,
-  // ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-// import { CourseEntity } from './course.entity';
-import { AttendanceResultEntity } from './attendanceResult.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { AttendanceResultEntity } from './attendance-result.entity';
 
 @Entity('m_attendance_status')
 export class AttendanceStatusEntity {

@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
-import { AttendanceSessionEntity } from './attendanceSession.entity';
+import { AttendanceSessionEntity } from './attendance-session.entity';
 import { StudentEntity } from './student.entity';
-import { AttendanceStatusEntity } from './attendanceStatus.entity';
+import { AttendanceStatusEntity } from './attendance-status.entity';
 
 @Entity('t_attendance_result')
 export class AttendanceResultEntity {
