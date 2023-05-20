@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CreateTeacherDto } from './dto/create-teacher.dto';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class TeacherService {
@@ -16,5 +18,52 @@ export class TeacherService {
 
   getOneByEmail(email: string): Promise<TeacherEntity | null> {
     return this.teacherRepository.findOne({ where: { email } });
+  }
+
+  genRandomPassword() {
+    let result = '';
+    const characters =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let counter = 0;
+    while (counter < 10) {
+      result += characters.charAt(
+        Math.floor(Math.random() * characters.length),
+      );
+      counter += 1;
+    }
+    return result;
+  }
+
+  async createNewTeacher(createTeacherDto: CreateTeacherDto) {
+    const existsAccount = await this.teacherRepository.findOne({
+      where: { email: createTeacherDto.email },
+    });
+    if (existsAccount) throw new BadRequestException('Email already exists.');
+
+    const currentNewestTeacher = await this.teacherRepository.findOne({
+      order: { teacher_code: 'DESC' },
+    });
+
+    const genPassword = createTeacherDto.password || this.genRandomPassword();
+    const hashPassword = await bcrypt.hash(genPassword, 12);
+
+    const newTeacher = await this.teacherRepository.save(
+      this.teacherRepository.create({
+        teacher_code: !currentNewestTeacher
+          ? '20230001'
+          : parseInt(currentNewestTeacher.teacher_code) + 1 + '',
+        email: createTeacherDto.email,
+        password: hashPassword,
+        last_name: createTeacherDto.last_name,
+        first_name: createTeacherDto.first_name,
+        gender: createTeacherDto.gender,
+        phone_number: createTeacherDto.phone_number,
+        description: createTeacherDto.description,
+      }),
+    );
+
+    // send mail:
+
+    return newTeacher;
   }
 }
