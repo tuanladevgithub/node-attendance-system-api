@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { TeacherService } from '../teacher/teacher.service';
 import { JwtService } from '@nestjs/jwt';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +15,7 @@ export class AuthService {
 
     if (!teacher) throw new BadRequestException('Account not found.');
 
-    if (await bcrypt.compare(pass, teacher.password))
+    if (!(await bcrypt.compare(pass, teacher.password)))
       throw new BadRequestException('Wrong password.');
 
     const accessToken = await this.jwtService.signAsync({

@@ -3,7 +3,7 @@ import { Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class TeacherService {
