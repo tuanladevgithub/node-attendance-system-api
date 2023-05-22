@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { dataSourceOptions } from './db/typeorm-config';
 import { TeacherModule } from './modules/teacher/teacher.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CourseModule } from './modules/course/course.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './modules/auth/auth.module';
     }),
     AuthModule,
     TeacherModule,
+    CourseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

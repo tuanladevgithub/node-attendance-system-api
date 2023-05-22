@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
   Req,
@@ -29,10 +30,17 @@ export class TeacherController {
     return this.teacherService.createNewTeacher(createTeacherDto);
   }
 
-  @Get('list-course')
+  @Get('course')
   @UseGuards(TeacherAuthGuard)
   getListCourse(@Req() req: any, @Query('search') search?: string) {
     const { id }: JwtPayload = req['teacher-payload'];
     return this.teacherService.getListCourse(id, search);
+  }
+
+  @Get('course/:courseId')
+  @UseGuards(TeacherAuthGuard)
+  getCourseData(@Req() req: any, @Param('courseId') courseId: string) {
+    const { id }: JwtPayload = req['teacher-payload'];
+    return this.teacherService.getCourseData(id, parseInt(courseId));
   }
 }

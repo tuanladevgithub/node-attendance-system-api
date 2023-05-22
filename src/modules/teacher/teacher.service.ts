@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Brackets, Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +10,7 @@ import { CreateTeacherDto } from './dto/create-teacher.dto';
 import * as bcrypt from 'bcrypt';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
+import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 
 @Injectable()
 export class TeacherService {
@@ -15,6 +20,9 @@ export class TeacherService {
 
     @InjectRepository(CourseEntity)
     private readonly courseRepository: Repository<CourseEntity>,
+
+    @InjectRepository(AttendanceSessionEntity)
+    private readonly attendanceSessionRepository: Repository<AttendanceSessionEntity>,
   ) {}
 
   getOneById(id: number): Promise<TeacherEntity> {
@@ -72,7 +80,7 @@ export class TeacherService {
     return newTeacher;
   }
 
-  async getListCourse(teacherId: number, search?: string) {
+  getListCourse(teacherId: number, search?: string) {
     const query = this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndMapOne(
@@ -104,5 +112,20 @@ export class TeacherService {
       );
 
     return query.getMany();
+  }
+
+  async getCourseData(teacherId: number, courseId: number) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, t_teacher_id: teacherId },
+    });
+
+    if (!course) throw new NotFoundException('Course does not exist.');
+
+    const sessions = await this.attendanceSessionRepository.find({
+      where: { t_course_id: course.id },
+      order: { created_at: 'DESC' },
+    });
+
+    return { course, attendanceSessions: sessions };
   }
 }

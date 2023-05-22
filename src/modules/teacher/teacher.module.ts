@@ -6,6 +6,7 @@ import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
+import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CourseParticipationEntity } from 'src/db/entities/course-participation.
       SubjectEntity,
       CourseEntity,
       CourseParticipationEntity,
+      AttendanceSessionEntity,
     ]),
   ],
   controllers: [TeacherController],
