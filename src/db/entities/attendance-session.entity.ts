@@ -21,11 +21,20 @@ export class AttendanceSessionEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'password', nullable: true })
   password?: string;
 
-  @Column({ type: 'datetime', name: 'start_datetime' })
-  start_datetime: Date;
+  @Column({ type: 'varchar', name: 'session_date' })
+  session_date: string;
 
-  @Column({ type: 'datetime', name: 'end_datetime' })
-  end_datetime: Date;
+  @Column({ type: 'int', name: 'start_hour', unsigned: true })
+  start_hour: number;
+
+  @Column({ type: 'int', name: 'start_min', unsigned: true })
+  start_min: number;
+
+  @Column({ type: 'int', name: 'end_hour', unsigned: true })
+  end_hour: number;
+
+  @Column({ type: 'int', name: 'end_min', unsigned: true })
+  end_min: number;
 
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;
