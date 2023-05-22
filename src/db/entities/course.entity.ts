@@ -40,6 +40,8 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'end_date', nullable: true })
   end_date?: string;
 
+  countStudents?: number;
+
   /**
    * relations
    */

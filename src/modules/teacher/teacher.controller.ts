@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { TeacherService } from './teacher.service';
 import { JwtPayload } from 'src/types/auth.type';
 import { TeacherAuthGuard } from '../auth/teacher-auth.guard';
@@ -19,5 +27,12 @@ export class TeacherController {
   @Post('create-new')
   createNewTeacher(@Body() createTeacherDto: CreateTeacherDto) {
     return this.teacherService.createNewTeacher(createTeacherDto);
+  }
+
+  @Get('list-course')
+  @UseGuards(TeacherAuthGuard)
+  getListCourse(@Req() req: any, @Query('search') search?: string) {
+    const { id }: JwtPayload = req['teacher-payload'];
+    return this.teacherService.getListCourse(id, search);
   }
 }

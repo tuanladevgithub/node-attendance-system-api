@@ -1,15 +1,20 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import * as bcrypt from 'bcrypt';
+import { CourseEntity } from 'src/db/entities/course.entity';
+import { SubjectEntity } from 'src/db/entities/subject.entity';
 
 @Injectable()
 export class TeacherService {
   constructor(
     @InjectRepository(TeacherEntity)
     private readonly teacherRepository: Repository<TeacherEntity>,
+
+    @InjectRepository(CourseEntity)
+    private readonly courseRepository: Repository<CourseEntity>,
   ) {}
 
   getOneById(id: number): Promise<TeacherEntity> {
@@ -65,5 +70,39 @@ export class TeacherService {
     // send mail:
 
     return newTeacher;
+  }
+
+  async getListCourse(teacherId: number, search?: string) {
+    const query = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      )
+      .where('course.t_teacher_id = :teacherId', { teacherId });
+
+    if (search)
+      query.andWhere(
+        new Brackets((qb) =>
+          qb
+            .where('subject.subject_name LIKE :search', {
+              search: `%${search}%`,
+            })
+            .orWhere('subject.subject_code LIKE :search', {
+              search: `%${search}%`,
+            })
+            .orWhere('course.course_code LIKE :search', {
+              search: `%${search}%`,
+            }),
+        ),
+      );
+
+    return query.getMany();
   }
 }
