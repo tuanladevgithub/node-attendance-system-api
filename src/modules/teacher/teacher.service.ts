@@ -11,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
+import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
+import { compareAsc } from 'date-fns';
 
 @Injectable()
 export class TeacherService {
@@ -127,5 +129,62 @@ export class TeacherService {
     });
 
     return { course, attendanceSessions: sessions };
+  }
+
+  async addAttendanceSession(
+    teacherId: number,
+    courseId: number,
+    createAttendanceSessionDto: CreateAttendanceSessionDto,
+  ) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, t_teacher_id: teacherId },
+    });
+
+    if (!course) throw new NotFoundException('Course does not exist.');
+
+    const {
+      session_date,
+      start_hour,
+      start_min,
+      end_hour,
+      end_min,
+      description,
+    } = createAttendanceSessionDto;
+
+    const date = new Date(session_date);
+    if (!(date instanceof Date && !isNaN(date.getTime())))
+      throw new BadRequestException('Session date is incorrect.');
+
+    if (compareAsc(new Date(session_date), new Date(course.start_date)) === -1)
+      throw new BadRequestException(
+        "Session date must be equal or after course's start date.",
+      );
+
+    if (
+      course.end_date &&
+      compareAsc(new Date(session_date), new Date(course.end_date)) === 1
+    )
+      throw new BadRequestException(
+        "Session date must be equal or before course's end date.",
+      );
+
+    if (start_hour > end_hour)
+      throw new BadRequestException('Start time must be less than end time.');
+
+    if (start_hour === end_hour && start_min > end_min)
+      throw new BadRequestException('Start time must be less than end time.');
+
+    return await this.attendanceSessionRepository.save(
+      this.attendanceSessionRepository.create({
+        t_course_id: course.id,
+        // password,
+        session_date,
+        start_hour,
+        start_min,
+        end_hour,
+        end_min,
+        description: description || 'Regular class session',
+      }),
+    );
   }
 }
