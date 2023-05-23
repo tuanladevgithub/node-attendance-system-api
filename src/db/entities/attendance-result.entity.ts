@@ -14,8 +14,8 @@ export class AttendanceResultEntity {
   @Column({ type: 'int', name: 'm_attendance_status_id', nullable: true })
   m_attendance_status_id?: number;
 
-  @Column({ type: 'datetime', name: 'record_time', nullable: true })
-  record_time?: string;
+  @Column({ type: 'datetime', name: 'record_time' })
+  record_time: Date;
 
   @Column({ type: 'varchar', name: 'ip_address' })
   ip_address: string;

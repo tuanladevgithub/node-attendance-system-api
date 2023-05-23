@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
@@ -13,12 +13,20 @@ import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
 import { compareAsc } from 'date-fns';
+import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
+import { StudentEntity } from 'src/db/entities/student.entity';
+import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 
 @Injectable()
 export class TeacherService {
   constructor(
+    private dataSource: DataSource,
+
     @InjectRepository(TeacherEntity)
     private readonly teacherRepository: Repository<TeacherEntity>,
+
+    @InjectRepository(StudentEntity)
+    private readonly studentRepository: Repository<StudentEntity>,
 
     @InjectRepository(CourseEntity)
     private readonly courseRepository: Repository<CourseEntity>,
@@ -186,5 +194,85 @@ export class TeacherService {
         description: description || 'Regular class session',
       }),
     );
+  }
+
+  async getAttendanceSessionData(
+    teacherId: number,
+    courseId: number,
+    sessionId: number,
+  ) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, t_teacher_id: teacherId },
+    });
+
+    if (!course) throw new NotFoundException('Course does not exist.');
+
+    const session = await this.attendanceSessionRepository.findOne({
+      where: { id: sessionId, t_course_id: course.id },
+    });
+
+    if (!session) throw new NotFoundException('Session does not exist.');
+
+    return session;
+  }
+
+  async deleteAttendanceSession(
+    teacherId: number,
+    courseId: number,
+    sessionId: number,
+  ) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, t_teacher_id: teacherId },
+    });
+
+    if (!course) throw new NotFoundException('Course does not exist.');
+
+    const session = await this.attendanceSessionRepository.findOne({
+      where: { id: sessionId, t_course_id: course.id },
+    });
+
+    if (!session) throw new NotFoundException('Session does not exist.');
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(AttendanceResultEntity, {
+        t_attendance_session_id: session.id,
+      });
+
+      await manager.delete(AttendanceSessionEntity, { id: session.id });
+    });
+  }
+
+  async getAttendanceSessionResult(
+    teacherId: number,
+    courseId: number,
+    sessionId: number,
+  ) {
+    const session = await this.getAttendanceSessionData(
+      teacherId,
+      courseId,
+      sessionId,
+    );
+
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoin(
+        CourseParticipationEntity,
+        'course_participation',
+        'course_participation.t_student_id = student.id',
+      )
+      .leftJoinAndMapOne(
+        'student.sessionResult',
+        AttendanceResultEntity,
+        'session_result',
+        'session_result.t_student_id = student.id AND session_result.t_attendance_session_id = :sessionId',
+        { sessionId: session.id },
+      )
+      .where('course_participation.t_course_id = :courseId', { courseId })
+      .getMany();
+
+    return {
+      session,
+      students,
+    };
   }
 }

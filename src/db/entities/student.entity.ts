@@ -9,7 +9,7 @@ export class StudentEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
 
-  @Column({ type: 'varchar', name: 'teacher_code', unique: true })
+  @Column({ type: 'varchar', name: 'student_code', unique: true })
   student_code: string;
 
   @Column({ type: 'varchar', name: 'email', unique: true })
@@ -37,6 +37,8 @@ export class StudentEntity extends BaseCreateUpdateColumnEntity {
 
   @Column({ type: 'int', name: 'age', nullable: true })
   age?: number;
+
+  sessionResult?: AttendanceResultEntity;
 
   /**
    * relations

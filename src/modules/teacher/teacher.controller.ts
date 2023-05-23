@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,7 +15,6 @@ import { TeacherService } from './teacher.service';
 import { JwtPayload } from 'src/types/auth.type';
 import { TeacherAuthGuard } from '../auth/teacher-auth.guard';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
-import { ReturnDocument } from 'typeorm';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
 
 @Controller('teacher')
@@ -61,6 +61,54 @@ export class TeacherController {
       id,
       parseInt(courseId),
       createAttendanceSessionDto,
+    );
+  }
+
+  @Get('course/:courseId/session/:sessionId')
+  @UseGuards(TeacherAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  getAttendanceSessionData(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const { id }: JwtPayload = req['teacher-payload'];
+    return this.teacherService.getAttendanceSessionData(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
+    );
+  }
+
+  @Delete('course/:courseId/session/:sessionId')
+  @UseGuards(TeacherAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  deleteAttendanceSession(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const { id }: JwtPayload = req['teacher-payload'];
+    return this.teacherService.deleteAttendanceSession(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
+    );
+  }
+
+  @Get('course/:courseId/session/:sessionId/result')
+  @UseGuards(TeacherAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  getAttendanceSessionResult(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const { id }: JwtPayload = req['teacher-payload'];
+    return this.teacherService.getAttendanceSessionResult(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
     );
   }
 }
