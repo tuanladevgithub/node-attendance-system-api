@@ -16,6 +16,7 @@ import { compareAsc } from 'date-fns';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
+import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 
 @Injectable()
 export class TeacherService {
@@ -135,6 +136,12 @@ export class TeacherService {
         SubjectEntity,
         'subject',
         'subject.id = course.m_subject_id',
+      )
+      .leftJoinAndMapMany(
+        'course.courseSchedules',
+        CourseScheduleEntity,
+        'schedule',
+        'schedule.t_course_id = course.id',
       )
       .loadRelationCountAndMap(
         'course.countStudents',
