@@ -90,6 +90,43 @@ export class TeacherService {
     return newTeacher;
   }
 
+  async getCurrentMonthSessions(teacherId: number, currentYearMonth: string) {
+    const sessions = await this.attendanceSessionRepository
+      .createQueryBuilder('session')
+      .leftJoinAndMapOne(
+        'session.course',
+        CourseEntity,
+        'course',
+        'course.id = session.t_course_id',
+      )
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .leftJoin(TeacherEntity, 'teacher', 'teacher.id = course.t_teacher_id')
+      .where('teacher.id = :teacherId', { teacherId })
+      .andWhere('session.session_date LIKE :sessionDate', {
+        sessionDate: `${currentYearMonth}%`,
+      })
+      .orderBy('session.session_date', 'ASC')
+      .addOrderBy('session.start_hour', 'ASC')
+      .addOrderBy('session.start_min', 'ASC')
+      .getMany();
+
+    const result: { [sessionDateProp: string]: AttendanceSessionEntity[] } = {};
+
+    if (sessions && sessions.length > 0)
+      sessions.forEach((session) => {
+        if (!result[`${session.session_date}`])
+          result[`${session.session_date}`] = [session];
+        else result[`${session.session_date}`].push(session);
+      });
+
+    return result;
+  }
+
   getListCourse(teacherId: number, search?: string) {
     const query = this.courseRepository
       .createQueryBuilder('course')

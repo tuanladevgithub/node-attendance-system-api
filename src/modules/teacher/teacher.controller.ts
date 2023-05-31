@@ -34,6 +34,17 @@ export class TeacherController {
     return this.teacherService.createNewTeacher(createTeacherDto);
   }
 
+  @Get('current-month-sessions')
+  @UseGuards(TeacherAuthGuard)
+  getCurrentMonthSession(
+    @Req() req: any,
+    @Query('currentYearMonth') currentYearMonth: string,
+  ) {
+    const { id }: JwtPayload = req['teacher-payload'];
+
+    return this.teacherService.getCurrentMonthSessions(id, currentYearMonth);
+  }
+
   @Get('course')
   @UseGuards(TeacherAuthGuard)
   getListCourse(@Req() req: any, @Query('search') search?: string) {
