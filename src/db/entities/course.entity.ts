@@ -13,6 +13,7 @@ import { AttendanceSessionEntity } from './attendance-session.entity';
 import { AttendanceSettingEntity } from './attendance-setting.entity';
 import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 import { SubjectEntity } from './subject.entity';
+import { CourseScheduleEntity } from './course-schedule.entity';
 
 @Entity('t_course')
 export class CourseEntity extends BaseCreateUpdateColumnEntity {
@@ -67,4 +68,7 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
 
   @OneToMany(() => AttendanceSessionEntity, (attendance) => attendance.course)
   attendanceSessions?: AttendanceSessionEntity[];
+
+  @OneToMany(() => CourseScheduleEntity, (schedule) => schedule.course)
+  courseSchedules?: CourseScheduleEntity[];
 }
