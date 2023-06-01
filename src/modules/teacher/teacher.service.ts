@@ -17,6 +17,7 @@ import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
+import { DayOfWeek } from 'src/types/common.type';
 
 @Injectable()
 export class TeacherService {
@@ -91,7 +92,7 @@ export class TeacherService {
     return newTeacher;
   }
 
-  async getCurrentMonthSessions(teacherId: number, currentYearMonth: string) {
+  async getMonthSessions(teacherId: number, yearMonth: string) {
     const sessions = await this.attendanceSessionRepository
       .createQueryBuilder('session')
       .leftJoinAndMapOne(
@@ -109,7 +110,7 @@ export class TeacherService {
       .leftJoin(TeacherEntity, 'teacher', 'teacher.id = course.t_teacher_id')
       .where('teacher.id = :teacherId', { teacherId })
       .andWhere('session.session_date LIKE :sessionDate', {
-        sessionDate: `${currentYearMonth}%`,
+        sessionDate: `${yearMonth}%`,
       })
       .orderBy('session.session_date', 'ASC')
       .addOrderBy('session.start_hour', 'ASC')
@@ -137,12 +138,6 @@ export class TeacherService {
         'subject',
         'subject.id = course.m_subject_id',
       )
-      .leftJoinAndMapMany(
-        'course.courseSchedules',
-        CourseScheduleEntity,
-        'schedule',
-        'schedule.t_course_id = course.id',
-      )
       .loadRelationCountAndMap(
         'course.countStudents',
         'course.courseParticipation',
@@ -166,6 +161,39 @@ export class TeacherService {
       );
 
     return query.getMany();
+  }
+
+  getTodayListCourse(teacherId: number, today: string, dayOfWeek: DayOfWeek) {
+    return this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .innerJoinAndMapMany(
+        'course.courseSchedules',
+        CourseScheduleEntity,
+        'schedule',
+        'schedule.t_course_id = course.id AND schedule.day_of_week = :dayOfWeek',
+        { dayOfWeek },
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      )
+      .where('course.t_teacher_id = :teacherId', { teacherId })
+      .andWhere('course.start_date <= :today', { today })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('course.end_date IS NULL').orWhere(
+            'course.end_date >= :today',
+            { today },
+          );
+        }),
+      )
+      .getMany();
   }
 
   async getCourseData(teacherId: number, courseId: number) {

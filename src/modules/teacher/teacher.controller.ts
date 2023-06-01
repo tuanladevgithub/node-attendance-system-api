@@ -16,6 +16,7 @@ import { JwtPayload } from 'src/types/auth.type';
 import { TeacherAuthGuard } from '../auth/teacher-auth.guard';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
+import { DayOfWeek } from 'src/types/common.type';
 
 @Controller('teacher')
 export class TeacherController {
@@ -34,15 +35,15 @@ export class TeacherController {
     return this.teacherService.createNewTeacher(createTeacherDto);
   }
 
-  @Get('current-month-sessions')
+  @Get('month-sessions')
   @UseGuards(TeacherAuthGuard)
   getCurrentMonthSession(
     @Req() req: any,
-    @Query('currentYearMonth') currentYearMonth: string,
+    @Query('yearMonth') yearMonth: string,
   ) {
     const { id }: JwtPayload = req['teacher-payload'];
 
-    return this.teacherService.getCurrentMonthSessions(id, currentYearMonth);
+    return this.teacherService.getMonthSessions(id, yearMonth);
   }
 
   @Get('course')
@@ -50,6 +51,17 @@ export class TeacherController {
   getListCourse(@Req() req: any, @Query('search') search?: string) {
     const { id }: JwtPayload = req['teacher-payload'];
     return this.teacherService.getListCourse(id, search);
+  }
+
+  @Get('today-course')
+  @UseGuards(TeacherAuthGuard)
+  getTodayListCourse(
+    @Req() req: any,
+    @Query('today') today: string,
+    @Query('dayOfWeek') dayOfWeek: DayOfWeek,
+  ) {
+    const { id }: JwtPayload = req['teacher-payload'];
+    return this.teacherService.getTodayListCourse(id, today, dayOfWeek);
   }
 
   @Get('course/:courseId')
