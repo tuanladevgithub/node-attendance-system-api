@@ -33,6 +33,9 @@ export class TeacherService {
     @InjectRepository(CourseEntity)
     private readonly courseRepository: Repository<CourseEntity>,
 
+    @InjectRepository(CourseScheduleEntity)
+    private readonly courseScheduleRepository: Repository<CourseScheduleEntity>,
+
     @InjectRepository(AttendanceSessionEntity)
     private readonly attendanceSessionRepository: Repository<AttendanceSessionEntity>,
   ) {}
@@ -163,21 +166,20 @@ export class TeacherService {
     return query.getMany();
   }
 
-  getTodayListCourse(teacherId: number, today: string, dayOfWeek: DayOfWeek) {
-    return this.courseRepository
-      .createQueryBuilder('course')
+  getTodaySchedule(teacherId: number, today: string, dayOfWeek: DayOfWeek) {
+    return this.courseScheduleRepository
+      .createQueryBuilder('schedule')
+      .leftJoinAndMapOne(
+        'schedule.course',
+        CourseEntity,
+        'course',
+        'schedule.t_course_id = course.id',
+      )
       .leftJoinAndMapOne(
         'course.subject',
         SubjectEntity,
         'subject',
         'subject.id = course.m_subject_id',
-      )
-      .innerJoinAndMapMany(
-        'course.courseSchedules',
-        CourseScheduleEntity,
-        'schedule',
-        'schedule.t_course_id = course.id AND schedule.day_of_week = :dayOfWeek',
-        { dayOfWeek },
       )
       .loadRelationCountAndMap(
         'course.countStudents',
@@ -193,6 +195,9 @@ export class TeacherService {
           );
         }),
       )
+      .andWhere('schedule.day_of_week = :dayOfWeek', { dayOfWeek })
+      .orderBy('schedule.start_hour', 'ASC')
+      .addOrderBy('schedule.start_min', 'ASC')
       .getMany();
   }
 

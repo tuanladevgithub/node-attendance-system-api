@@ -53,7 +53,7 @@ export class TeacherController {
     return this.teacherService.getListCourse(id, search);
   }
 
-  @Get('today-course')
+  @Get('today-schedule')
   @UseGuards(TeacherAuthGuard)
   getTodayListCourse(
     @Req() req: any,
@@ -61,7 +61,7 @@ export class TeacherController {
     @Query('dayOfWeek') dayOfWeek: DayOfWeek,
   ) {
     const { id }: JwtPayload = req['teacher-payload'];
-    return this.teacherService.getTodayListCourse(id, today, dayOfWeek);
+    return this.teacherService.getTodaySchedule(id, today, dayOfWeek);
   }
 
   @Get('course/:courseId')
