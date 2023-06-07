@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { TeacherModule } from '../teacher/teacher.module';
 import { JwtModule } from '@nestjs/jwt';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { JwtModule } from '@nestjs/jwt';
       secret: 'TODO:THIS_IS_JWT_SECRET_KEY_SAMPLE',
       signOptions: { expiresIn: '1d' },
     }),
+    AdminModule,
     TeacherModule,
   ],
   controllers: [AuthController],

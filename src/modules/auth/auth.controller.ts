@@ -11,4 +11,10 @@ export class AuthController {
   loginTeacher(@Body() loginDto: LoginDto) {
     return this.authService.loginTeacher(loginDto.email, loginDto.pass);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('login-admin')
+  loginAdmin(@Body('username') username: string, @Body('pass') pass: string) {
+    return this.authService.loginAdmin(username, pass);
+  }
 }
