@@ -1,6 +1,6 @@
-import { UserGender } from 'src/types/common.type';
-
 export class CreateTeacherDto {
+  m_department_id: number;
+
   email: string;
 
   password?: string;
@@ -8,8 +8,6 @@ export class CreateTeacherDto {
   last_name: string;
 
   first_name: string;
-
-  gender?: UserGender;
 
   phone_number?: string;
 

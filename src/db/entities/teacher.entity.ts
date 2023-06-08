@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { CourseEntity } from './course.entity';
 import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
-import { UserGender } from 'src/types/common.type';
 import { DepartmentEntity } from './department.entity';
 
 @Entity('t_teacher')
@@ -33,14 +32,6 @@ export class TeacherEntity extends BaseCreateUpdateColumnEntity {
 
   @Column({ type: 'varchar', name: 'first_name' })
   first_name: string;
-
-  // @Column({
-  //   type: 'enum',
-  //   name: 'gender',
-  //   enum: UserGender,
-  //   default: UserGender.MALE,
-  // })
-  // gender: UserGender;
 
   @Column({ type: 'varchar', name: 'phone_number', nullable: true })
   phone_number?: string;

@@ -77,6 +77,7 @@ export class TeacherService {
 
     const newTeacher = await this.teacherRepository.save(
       this.teacherRepository.create({
+        m_department_id: createTeacherDto.m_department_id,
         teacher_code: !currentNewestTeacher
           ? '20230001'
           : parseInt(currentNewestTeacher.teacher_code) + 1 + '',
@@ -84,7 +85,6 @@ export class TeacherService {
         password: hashPassword,
         last_name: createTeacherDto.last_name,
         first_name: createTeacherDto.first_name,
-        gender: createTeacherDto.gender,
         phone_number: createTeacherDto.phone_number,
         description: createTeacherDto.description,
       }),

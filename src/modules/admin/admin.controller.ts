@@ -1,7 +1,19 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { JwtAdminPayload } from 'src/types/auth.type';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('admin')
 export class AdminController {
@@ -13,5 +25,22 @@ export class AdminController {
     const { id }: JwtAdminPayload = req['admin-payload'];
     const { password, ...result } = await this.adminService.getOneById(id);
     return result;
+  }
+
+  @Get('search-teacher')
+  @UseGuards(AdminAuthGuard)
+  getListOfTeachers(
+    @Query('departmentId') departmentId?: number,
+    @Query('searchText') searchText?: string,
+  ) {
+    return this.adminService.getListOfTeachers(departmentId, searchText);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('upload-teacher-csv')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  importTeachersFromCsv(@UploadedFile() file: Express.Multer.File) {
+    return this.adminService.importTeachersFromCsv(file);
   }
 }
