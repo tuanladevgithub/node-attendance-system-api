@@ -1,12 +1,23 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { CourseEntity } from './course.entity';
 import { BaseCreateUpdateColumnEntity } from './base-create-update-column.entity';
 import { UserGender } from 'src/types/common.type';
+import { DepartmentEntity } from './department.entity';
 
 @Entity('t_teacher')
 export class TeacherEntity extends BaseCreateUpdateColumnEntity {
   @PrimaryGeneratedColumn('increment', { type: 'int' })
   id: number;
+
+  @Column({ type: 'int', name: 'm_department_id' })
+  m_department_id: number;
 
   @Column({ type: 'varchar', name: 'teacher_code', unique: true })
   teacher_code: string;
@@ -40,6 +51,10 @@ export class TeacherEntity extends BaseCreateUpdateColumnEntity {
   /**
    * relations
    */
+  @ManyToOne(() => DepartmentEntity, (department) => department.teachers)
+  @JoinColumn({ name: 'm_department_id' })
+  department?: DepartmentEntity;
+
   @OneToMany(() => CourseEntity, (course) => course.teacher)
   courses?: CourseEntity[];
 }
