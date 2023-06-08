@@ -34,13 +34,13 @@ export class TeacherEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'first_name' })
   first_name: string;
 
-  @Column({
-    type: 'enum',
-    name: 'gender',
-    enum: UserGender,
-    default: UserGender.MALE,
-  })
-  gender: UserGender;
+  // @Column({
+  //   type: 'enum',
+  //   name: 'gender',
+  //   enum: UserGender,
+  //   default: UserGender.MALE,
+  // })
+  // gender: UserGender;
 
   @Column({ type: 'varchar', name: 'phone_number', nullable: true })
   phone_number?: string;
