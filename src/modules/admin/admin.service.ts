@@ -124,7 +124,9 @@ export class AdminService {
         recordErrors.push(`duplicate teacher_code in file`);
       if (
         teacher_code &&
-        teachers.findIndex((teacher) => teacher.teacher_code === teacher_code)
+        teachers.findIndex(
+          (teacher) => teacher.teacher_code === teacher_code,
+        ) !== -1
       )
         recordErrors.push(`teacher_code "${teacher_code}" is exist`);
 
@@ -134,7 +136,10 @@ export class AdminService {
       if (email && records.findIndex((record) => record.email === email) !== -1)
         recordErrors.push(`duplicate email in file`);
       if (email && !isEmail(email)) recordErrors.push(`invalid email`);
-      if (email && teachers.findIndex((teacher) => teacher.email === email))
+      if (
+        email &&
+        teachers.findIndex((teacher) => teacher.email === email) !== -1
+      )
         recordErrors.push(`email "${email}" is exist`);
 
       // check last_name:
