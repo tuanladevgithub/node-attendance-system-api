@@ -1,8 +1,10 @@
 import {
   Controller,
+  FileTypeValidator,
   Get,
   HttpCode,
   HttpStatus,
+  ParseFilePipe,
   Post,
   Query,
   Req,
@@ -40,7 +42,14 @@ export class AdminController {
   @Post('upload-teacher-csv')
   @UseGuards(AdminAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
-  importTeachersFromCsv(@UploadedFile() file: Express.Multer.File) {
+  importTeachersFromCsv(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'text/csv' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
     return this.adminService.importTeachersFromCsv(file);
   }
 }
