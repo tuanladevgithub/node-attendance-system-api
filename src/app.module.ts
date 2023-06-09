@@ -8,6 +8,7 @@ import { TeacherModule } from './modules/teacher/teacher.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CourseModule } from './modules/course/course.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { DepartmentEntity } from './db/entities/department.entity';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AdminModule } from './modules/admin/admin.module';
     TypeOrmModule.forRootAsync({
       useFactory: () => dataSourceOptions,
     }),
+    TypeOrmModule.forFeature([DepartmentEntity]),
     AuthModule,
     TeacherModule,
     CourseModule,
