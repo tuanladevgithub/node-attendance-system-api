@@ -5,10 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminEntity } from 'src/db/entities/admin.entity';
 import { DepartmentEntity } from 'src/db/entities/department.entity';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
+import { StudentEntity } from 'src/db/entities/student.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AdminEntity, DepartmentEntity, TeacherEntity]),
+    TypeOrmModule.forFeature([
+      AdminEntity,
+      DepartmentEntity,
+      TeacherEntity,
+      StudentEntity,
+    ]),
   ],
   controllers: [AdminController],
   providers: [AdminService],

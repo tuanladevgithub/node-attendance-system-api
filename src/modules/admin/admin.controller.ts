@@ -16,6 +16,7 @@ import { AdminService } from './admin.service';
 import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { JwtAdminPayload } from 'src/types/auth.type';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserGender } from 'src/types/common.type';
 
 @Controller('admin')
 export class AdminController {
@@ -51,5 +52,14 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importTeachersFromCsv(file);
+  }
+
+  @Get('search-student')
+  @UseGuards(AdminAuthGuard)
+  getListOfStudents(
+    @Query('gender') gender?: UserGender,
+    @Query('searchText') searchText?: string,
+  ) {
+    return this.adminService.getListOfStudents(gender, searchText);
   }
 }

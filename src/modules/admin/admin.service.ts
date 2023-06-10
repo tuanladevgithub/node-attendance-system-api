@@ -8,6 +8,8 @@ import { parse } from 'csv-parse';
 import { Readable } from 'stream';
 import * as bcrypt from 'bcrypt';
 import { isEmail, isPhoneNumber } from 'class-validator';
+import { StudentEntity } from 'src/db/entities/student.entity';
+import { UserGender } from 'src/types/common.type';
 
 @Injectable()
 export class AdminService {
@@ -20,6 +22,9 @@ export class AdminService {
 
     @InjectRepository(DepartmentEntity)
     private readonly departmentRepository: Repository<DepartmentEntity>,
+
+    @InjectRepository(StudentEntity)
+    private readonly studentRepository: Repository<StudentEntity>,
   ) {}
 
   getOneById(id: number): Promise<AdminEntity> {
@@ -180,5 +185,37 @@ export class AdminService {
       await this.teacherRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
+  }
+
+  getListOfStudents(gender?: UserGender, searchText?: string) {
+    const query = this.studentRepository.createQueryBuilder('student');
+
+    if (gender) query.andWhere('student.gender = :gender', { gender });
+
+    if (searchText) {
+      searchText = searchText.trim();
+      query.andWhere(
+        new Brackets((qb) =>
+          qb
+            .where('student.student_code LIKE :studentCode', {
+              studentCode: `%${searchText}%`,
+            })
+            .orWhere('student.email LIKE :email', {
+              email: `%${searchText}%`,
+            })
+            .orWhere('student.first_name LIKE :firstName', {
+              firstName: `%${searchText}%`,
+            })
+            .orWhere('student.last_name LIKE :lastName', {
+              lastName: `%${searchText}%`,
+            })
+            .orWhere('student.phone_number LIKE :phoneNumber', {
+              phoneNumber: `%${searchText}%`,
+            }),
+        ),
+      );
+    }
+
+    return query.getMany();
   }
 }
