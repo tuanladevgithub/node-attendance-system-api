@@ -62,4 +62,19 @@ export class AdminController {
   ) {
     return this.adminService.getListOfStudents(gender, searchText);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('upload-student-csv')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  importStudentsFromCsv(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'text/csv' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.adminService.importStudentsFromCsv(file);
+  }
 }

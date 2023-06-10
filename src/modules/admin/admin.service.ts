@@ -218,4 +218,116 @@ export class AdminService {
 
     return query.getMany();
   }
+
+  async importStudentsFromCsv(file: Express.Multer.File) {
+    console.log(file);
+
+    const students = await this.studentRepository.find({
+      select: ['student_code', 'email'],
+    });
+    if (!file) throw new BadRequestException('File is required.');
+    const { buffer } = file;
+    const fileStream = Readable.from(buffer);
+    const parseCsv = fileStream.pipe(
+      parse({
+        bom: true,
+        columns: true,
+        trim: true,
+        quote: '"',
+        skip_empty_lines: true,
+      }),
+    );
+    const records: StudentEntity[] = [];
+    const errors: string[] = [];
+
+    let lineNumber = 2;
+    for await (const _record of parseCsv) {
+      const recordErrors: string[] = [];
+
+      // check student_code:
+      const student_code = _record['student_code'];
+      if (!student_code) recordErrors.push('student_code is missing');
+      if (
+        student_code &&
+        records.findIndex((record) => record.student_code === student_code) !==
+          -1
+      )
+        recordErrors.push(`duplicate student_code in file`);
+      if (
+        student_code &&
+        students.findIndex(
+          (student) => student.student_code === student_code,
+        ) !== -1
+      )
+        recordErrors.push(`student_code "${student_code}" is exist`);
+
+      // check email:
+      const email = _record['email'];
+      if (!email) recordErrors.push('email is missing');
+      if (email && records.findIndex((record) => record.email === email) !== -1)
+        recordErrors.push(`duplicate email in file`);
+      if (email && !isEmail(email)) recordErrors.push(`invalid email`);
+      if (
+        email &&
+        students.findIndex((student) => student.email === email) !== -1
+      )
+        recordErrors.push(`email "${email}" is exist`);
+
+      // check last_name:
+      const last_name = _record['last_name'];
+      if (!last_name) recordErrors.push('last_name is missing');
+
+      // check first_name:
+      const first_name = _record['first_name'];
+      if (!first_name) recordErrors.push('first_name is missing');
+
+      // check gender:
+      const gender = _record['gender'];
+      if (!gender) recordErrors.push('gender is missing');
+      if (
+        gender &&
+        !['MALE', 'FEMALE'].includes((gender as string).toUpperCase())
+      )
+        recordErrors.push('gender must belong to [male, female]');
+
+      // check phone_number:
+      const phone_number = _record['phone_number'];
+      if (phone_number && !isPhoneNumber(phone_number, 'VN'))
+        recordErrors.push(`invalid phone_number`);
+
+      // check AGE:
+      const age = _record['age'];
+      if (age && isNaN(parseInt(age)) && parseInt(age) < 1)
+        recordErrors.push(`age must be a positive integer`);
+
+      if (recordErrors.length > 0)
+        errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
+
+      if (recordErrors.length === 0)
+        records.push(
+          this.studentRepository.create({
+            student_code,
+            email,
+            password: await bcrypt.hash(student_code, 12),
+            last_name,
+            first_name,
+            gender:
+              (gender as string).toUpperCase() === 'MALE'
+                ? UserGender.MALE
+                : UserGender.FEMALE,
+            phone_number: !phone_number ? undefined : phone_number,
+            age: !age ? undefined : parseInt(age),
+          }),
+        );
+
+      lineNumber++;
+    }
+
+    if (errors.length > 0) {
+      return { isSuccess: false, errors };
+    } else {
+      await this.teacherRepository.insert(records);
+      return { isSuccess: true, errors: [] };
+    }
+  }
 }
