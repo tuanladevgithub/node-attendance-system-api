@@ -73,6 +73,12 @@ export class AdminController {
     return this.adminService.updateTeacherInfo(teacherId, updateTeacherInfoDto);
   }
 
+  @Get('get-teacher-course/:teacherId')
+  @UseGuards(AdminAuthGuard)
+  getTeacherCourse(@Param('teacherId') teacherId: number) {
+    return this.adminService.getTeacherCourse(teacherId);
+  }
+
   @Get('search-student')
   @UseGuards(AdminAuthGuard)
   getListOfStudents(

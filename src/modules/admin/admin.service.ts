@@ -232,6 +232,24 @@ export class AdminService {
     );
   }
 
+  getTeacherCourse(teacherId: number) {
+    const query = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      )
+      .where('course.t_teacher_id = :teacherId', { teacherId });
+
+    return query.getMany();
+  }
+
   getListOfStudents(gender?: UserGender, searchText?: string) {
     const query = this.studentRepository.createQueryBuilder('student');
 
