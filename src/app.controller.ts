@@ -21,4 +21,9 @@ export class AppController {
   getListOfDepartments() {
     return this.appService.getListOfDepartments();
   }
+
+  @Get('subject')
+  getListOfSubjects() {
+    return this.appService.getListOfSubjects();
+  }
 }
