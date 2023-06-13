@@ -1,10 +1,13 @@
 import {
+  Body,
   Controller,
   FileTypeValidator,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   ParseFilePipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -17,6 +20,7 @@ import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { JwtAdminPayload } from 'src/types/auth.type';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserGender } from 'src/types/common.type';
+import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -52,6 +56,21 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importTeachersFromCsv(file);
+  }
+
+  @Get('get-teacher-info/:teacherId')
+  @UseGuards(AdminAuthGuard)
+  getTeacherInfo(@Param('teacherId') teacherId: number) {
+    return this.adminService.getTeacherInfo(teacherId);
+  }
+
+  @Patch('update-teacher-info/:teacherId')
+  @UseGuards(AdminAuthGuard)
+  updateTeacherInfo(
+    @Param('teacherId') teacherId: number,
+    @Body() updateTeacherInfoDto: UpdateTeacherInfoDto,
+  ) {
+    return this.adminService.updateTeacherInfo(teacherId, updateTeacherInfoDto);
   }
 
   @Get('search-student')

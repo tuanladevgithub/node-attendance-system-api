@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { isEmail, isPhoneNumber } from 'class-validator';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { UserGender } from 'src/types/common.type';
+import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 
 @Injectable()
 export class AdminService {
@@ -185,6 +186,38 @@ export class AdminService {
       await this.teacherRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
+  }
+
+  getTeacherInfo(teacherId: number) {
+    return this.teacherRepository
+      .createQueryBuilder('teacher')
+      .leftJoinAndMapOne(
+        'teacher.department',
+        DepartmentEntity,
+        'department',
+        'department.id = teacher.m_department_id',
+      )
+      .where('teacher.id = :teacherId', { teacherId })
+      .getOneOrFail();
+  }
+
+  async updateTeacherInfo(
+    teacherId: number,
+    updateTeacherInfoDto: UpdateTeacherInfoDto,
+  ) {
+    const teacher = await this.teacherRepository.findOneOrFail({
+      where: { id: teacherId },
+    });
+
+    if (updateTeacherInfoDto.m_department_id)
+      await this.departmentRepository.findOneOrFail({
+        where: { id: updateTeacherInfoDto.m_department_id },
+      });
+
+    await this.teacherRepository.update(
+      { id: teacher.id },
+      updateTeacherInfoDto,
+    );
   }
 
   getListOfStudents(gender?: UserGender, searchText?: string) {
