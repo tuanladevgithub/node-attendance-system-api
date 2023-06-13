@@ -11,6 +11,8 @@ import { isEmail, isPhoneNumber } from 'class-validator';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { UserGender } from 'src/types/common.type';
 import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
+import { CourseEntity } from 'src/db/entities/course.entity';
+import { SubjectEntity } from 'src/db/entities/subject.entity';
 
 @Injectable()
 export class AdminService {
@@ -26,6 +28,12 @@ export class AdminService {
 
     @InjectRepository(StudentEntity)
     private readonly studentRepository: Repository<StudentEntity>,
+
+    @InjectRepository(SubjectEntity)
+    private readonly subjectRepository: Repository<SubjectEntity>,
+
+    @InjectRepository(CourseEntity)
+    private readonly courseRepository: Repository<CourseEntity>,
   ) {}
 
   getOneById(id: number): Promise<AdminEntity> {
@@ -161,6 +169,9 @@ export class AdminService {
       if (phone_number && !isPhoneNumber(phone_number, 'VN'))
         recordErrors.push(`invalid phone_number`);
 
+      // check description:
+      const description = _record['description'];
+
       if (recordErrors.length > 0)
         errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
 
@@ -174,6 +185,7 @@ export class AdminService {
             last_name,
             first_name,
             phone_number: !phone_number ? undefined : phone_number,
+            description,
           }),
         );
 
@@ -350,6 +362,141 @@ export class AdminService {
                 : UserGender.FEMALE,
             phone_number: !phone_number ? undefined : phone_number,
             age: !age ? undefined : parseInt(age),
+          }),
+        );
+
+      lineNumber++;
+    }
+
+    if (errors.length > 0) {
+      return { isSuccess: false, errors };
+    } else {
+      await this.teacherRepository.insert(records);
+      return { isSuccess: true, errors: [] };
+    }
+  }
+
+  getListOfCourses(subjectId?: number, searchText?: string) {
+    const query = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      );
+
+    if (subjectId)
+      query.andWhere('course.m_subject_id = :subjectId', { subjectId });
+
+    if (searchText)
+      query.andWhere(
+        new Brackets((qb) =>
+          qb
+            .where('subject.subject_name LIKE :subjectName', {
+              subjectName: `%${searchText}%`,
+            })
+            .orWhere('subject.subject_code LIKE :subjectCode', {
+              subjectCode: `%${searchText}%`,
+            })
+            .orWhere('course.course_code LIKE :courseCode', {
+              courseCode: `%${searchText}%`,
+            }),
+        ),
+      );
+
+    return query.getMany();
+  }
+
+  async importCoursesFromCsv(file: Express.Multer.File) {
+    console.log(file);
+
+    const subjectIds = (
+      await this.subjectRepository.find({ select: ['id'] })
+    ).map((subject) => subject.id);
+    const teacherIds = (
+      await this.teacherRepository.find({ select: ['id'] })
+    ).map((teacher) => teacher.id);
+    const courseCodes = (
+      await this.courseRepository.find({
+        select: ['course_code'],
+      })
+    ).map((course) => course.course_code);
+    if (!file) throw new BadRequestException('File is required.');
+    const { buffer } = file;
+    const fileStream = Readable.from(buffer);
+    const parseCsv = fileStream.pipe(
+      parse({
+        bom: true,
+        columns: true,
+        trim: true,
+        quote: '"',
+        skip_empty_lines: true,
+      }),
+    );
+    const records: CourseEntity[] = [];
+    const errors: string[] = [];
+
+    let lineNumber = 2;
+    for await (const _record of parseCsv) {
+      const recordErrors: string[] = [];
+
+      // check m_subject_id:
+      const m_subject_id = _record['m_subject_id'];
+      if (!m_subject_id) recordErrors.push('m_subject_id is missing');
+      if (m_subject_id && isNaN(parseInt(m_subject_id)))
+        recordErrors.push(`m_subject_id must be a positive integer`);
+      if (m_subject_id && !subjectIds.includes(parseInt(m_subject_id)))
+        recordErrors.push(`m_subject_id is not exist`);
+
+      // check t_teacher_id:
+      const t_teacher_id = _record['t_teacher_id'];
+      if (!t_teacher_id) recordErrors.push('t_teacher_id is missing');
+      if (t_teacher_id && isNaN(parseInt(t_teacher_id)))
+        recordErrors.push(`t_teacher_id must be a positive integer`);
+      if (t_teacher_id && !teacherIds.includes(parseInt(t_teacher_id)))
+        recordErrors.push(`t_teacher_id is not exist`);
+
+      // check course_code:
+      const course_code = _record['course_code'];
+      if (!course_code) recordErrors.push('course_code is missing');
+      if (
+        course_code &&
+        records.findIndex((record) => record.course_code === course_code) !== -1
+      )
+        recordErrors.push(`duplicate course_code in file`);
+      if (
+        course_code &&
+        courseCodes.findIndex((courseCode) => courseCode === course_code) !== -1
+      )
+        recordErrors.push(`course_code "${course_code}" is exist`);
+
+      // check description:
+      const description = _record['description'];
+
+      // check start_date:
+      const start_date = _record['start_date'];
+      if (!start_date) recordErrors.push('start_date is missing');
+
+      // check end_date:
+      const end_date = _record['end_date'];
+
+      if (recordErrors.length > 0)
+        errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
+
+      if (recordErrors.length === 0)
+        records.push(
+          this.courseRepository.create({
+            m_subject_id: parseInt(m_subject_id),
+            t_teacher_id: parseInt(t_teacher_id),
+            course_code,
+            description,
+            start_date,
+            end_date,
           }),
         );
 

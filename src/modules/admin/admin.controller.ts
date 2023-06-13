@@ -96,4 +96,28 @@ export class AdminController {
   ) {
     return this.adminService.importStudentsFromCsv(file);
   }
+
+  @Get('search-course')
+  @UseGuards(AdminAuthGuard)
+  getListOfCourses(
+    @Query('subjectId') subjectId?: number,
+    @Query('searchText') searchText?: string,
+  ) {
+    return this.adminService.getListOfCourses(subjectId, searchText);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('upload-course-csv')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  importCoursesFromCsv(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'text/csv' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.adminService.importCoursesFromCsv(file);
+  }
 }
