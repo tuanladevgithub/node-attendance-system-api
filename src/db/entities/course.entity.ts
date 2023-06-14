@@ -35,11 +35,11 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;
 
-  @Column({ type: 'varchar', name: 'start_date' })
+  @Column({ type: 'date', name: 'start_date' })
   start_date: string;
 
-  @Column({ type: 'varchar', name: 'end_date', nullable: true })
-  end_date?: string;
+  @Column({ type: 'date', name: 'end_date' })
+  end_date: string;
 
   countStudents?: number;
 

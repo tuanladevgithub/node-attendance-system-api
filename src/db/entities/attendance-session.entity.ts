@@ -21,7 +21,7 @@ export class AttendanceSessionEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'varchar', name: 'password', nullable: true })
   password?: string;
 
-  @Column({ type: 'varchar', name: 'session_date' })
+  @Column({ type: 'date', name: 'session_date' })
   session_date: string;
 
   @Column({ type: 'int', name: 'start_hour', unsigned: true })
