@@ -389,7 +389,7 @@ export class AdminService {
     if (errors.length > 0) {
       return { isSuccess: false, errors };
     } else {
-      await this.teacherRepository.insert(records);
+      await this.studentRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
   }
@@ -524,7 +524,7 @@ export class AdminService {
     if (errors.length > 0) {
       return { isSuccess: false, errors };
     } else {
-      await this.teacherRepository.insert(records);
+      await this.courseRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
   }
