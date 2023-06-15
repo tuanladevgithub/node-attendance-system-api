@@ -186,15 +186,8 @@ export class TeacherService {
         'course.courseParticipation',
       )
       .where('course.t_teacher_id = :teacherId', { teacherId })
-      .andWhere('course.start_date <= :today', { today })
-      .andWhere(
-        new Brackets((qb) => {
-          qb.where('course.end_date IS NULL').orWhere(
-            'course.end_date >= :today',
-            { today },
-          );
-        }),
-      )
+      .andWhere('course.start_date <= :startDate', { startDate: today })
+      .andWhere('course.end_date >= :endDate', { endDate: today })
       .andWhere('schedule.day_of_week = :dayOfWeek', { dayOfWeek })
       .orderBy('schedule.start_hour', 'ASC')
       .addOrderBy('schedule.start_min', 'ASC')

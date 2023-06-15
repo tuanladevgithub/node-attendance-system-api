@@ -37,10 +37,7 @@ export class TeacherController {
 
   @Get('month-sessions')
   @UseGuards(TeacherAuthGuard)
-  getCurrentMonthSession(
-    @Req() req: any,
-    @Query('yearMonth') yearMonth: string,
-  ) {
+  getMonthSession(@Req() req: any, @Query('yearMonth') yearMonth: string) {
     const { id }: JwtTeacherPayload = req['teacher-payload'];
 
     return this.teacherService.getMonthSessions(id, yearMonth);
