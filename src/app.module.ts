@@ -10,6 +10,7 @@ import { CourseModule } from './modules/course/course.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DepartmentEntity } from './db/entities/department.entity';
 import { SubjectEntity } from './db/entities/subject.entity';
+import { StudentModule } from './modules/student/student.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { SubjectEntity } from './db/entities/subject.entity';
     TeacherModule,
     CourseModule,
     AdminModule,
+    StudentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
