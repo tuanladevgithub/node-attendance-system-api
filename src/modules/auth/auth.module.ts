@@ -10,7 +10,7 @@ import { StudentModule } from '../student/student.module';
   imports: [
     JwtModule.register({
       global: true,
-      secret: 'TODO:THIS_IS_JWT_SECRET_KEY_SAMPLE',
+      secret: process.env.JWT_SECRET_KEY,
       signOptions: { expiresIn: '1d' },
     }),
     AdminModule,

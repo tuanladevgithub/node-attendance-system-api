@@ -20,7 +20,7 @@ export class TeacherAuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: 'TODO:THIS_IS_JWT_SECRET_KEY_SAMPLE',
+        secret: process.env.JWT_SECRET_KEY,
       });
       // 💡 We're assigning the payload to the request object here
       // so that we can access it in our route handlers
