@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Not, Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
@@ -68,9 +68,10 @@ export class TeacherService {
     });
     if (existsAccount) throw new BadRequestException('Email already exists.');
 
-    const currentNewestTeacher = await this.teacherRepository.findOne({
-      order: { teacher_code: 'DESC' },
-    });
+    const currentNewestTeacher = await this.teacherRepository
+      .createQueryBuilder('teacher')
+      .select('MAX(teacher.teacher_code) as maxTeacherCode')
+      .getRawOne();
 
     const genPassword = createTeacherDto.password || this.genRandomPassword();
     const hashPassword = await bcrypt.hash(genPassword, 12);
@@ -78,9 +79,10 @@ export class TeacherService {
     const newTeacher = await this.teacherRepository.save(
       this.teacherRepository.create({
         m_department_id: createTeacherDto.m_department_id,
-        teacher_code: !currentNewestTeacher
-          ? '20230001'
-          : parseInt(currentNewestTeacher.teacher_code) + 1 + '',
+        teacher_code:
+          !currentNewestTeacher || !currentNewestTeacher.maxTeacherCode
+            ? '20230001'
+            : parseInt(currentNewestTeacher.maxTeacherCode) + 1 + '',
         email: createTeacherDto.email,
         password: hashPassword,
         last_name: createTeacherDto.last_name,

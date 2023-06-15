@@ -8,6 +8,7 @@ import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
+import { TeacherModule } from '../teacher/teacher.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SubjectEntity } from 'src/db/entities/subject.entity';
       SubjectEntity,
       CourseEntity,
     ]),
+    TeacherModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

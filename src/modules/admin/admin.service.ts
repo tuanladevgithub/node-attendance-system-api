@@ -13,10 +13,14 @@ import { UserGender } from 'src/types/common.type';
 import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
+import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
+import { TeacherService } from '../teacher/teacher.service';
 
 @Injectable()
 export class AdminService {
   constructor(
+    private readonly teacherService: TeacherService,
+
     @InjectRepository(AdminEntity)
     private readonly adminRepository: Repository<AdminEntity>,
 
@@ -198,6 +202,10 @@ export class AdminService {
       await this.teacherRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
+  }
+
+  createNewTeacher(createTeacherDto: CreateTeacherDto) {
+    return this.teacherService.createNewTeacher(createTeacherDto);
   }
 
   getTeacherInfo(teacherId: number) {
