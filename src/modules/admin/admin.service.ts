@@ -15,11 +15,15 @@ import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
 import { TeacherService } from '../teacher/teacher.service';
+import { CreateStudentDto } from '../student/dto/create-student.dto';
+import { StudentService } from '../student/student.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly teacherService: TeacherService,
+
+    private readonly studentService: StudentService,
 
     @InjectRepository(AdminEntity)
     private readonly adminRepository: Repository<AdminEntity>,
@@ -400,6 +404,10 @@ export class AdminService {
       await this.studentRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
+  }
+
+  createNewStudent(createStudentDto: CreateStudentDto) {
+    return this.studentService.createNewStudent(createStudentDto);
   }
 
   getListOfCourses(subjectId?: number, searchText?: string) {

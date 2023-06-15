@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { CreateStudentDto } from './dto/create-student.dto';
 
 @Injectable()
 export class StudentService {
@@ -35,38 +36,38 @@ export class StudentService {
     return result;
   }
 
-  // async createNewTeacher(createTeacherDto: CreateTeacherDto) {
-  //   const existsAccount = await this.studentRepository.findOne({
-  //     where: { email: createTeacherDto.email },
-  //   });
-  //   if (existsAccount) throw new BadRequestException('Email already exists.');
+  async createNewStudent(createStudentDto: CreateStudentDto) {
+    const existsAccount = await this.studentRepository.findOne({
+      where: { email: createStudentDto.email },
+    });
+    if (existsAccount) throw new BadRequestException('Email already exists.');
 
-  //   const currentNewestTeacher = await this.studentRepository
-  //     .createQueryBuilder('teacher')
-  //     .select('MAX(teacher.teacher_code) as maxTeacherCode')
-  //     .getRawOne();
+    const currentNewestStudent = await this.studentRepository
+      .createQueryBuilder('student')
+      .select('MAX(student.student_code) as maxStudentCode')
+      .getRawOne();
 
-  //   const genPassword = createTeacherDto.password || this.genRandomPassword();
-  //   const hashPassword = await bcrypt.hash(genPassword, 12);
+    const genPassword = createStudentDto.password || this.genRandomPassword();
+    const hashPassword = await bcrypt.hash(genPassword, 12);
 
-  //   const newTeacher = await this.studentRepository.save(
-  //     this.studentRepository.create({
-  //       m_department_id: createTeacherDto.m_department_id,
-  //       teacher_code:
-  //         !currentNewestTeacher || !currentNewestTeacher.maxTeacherCode
-  //           ? '20230001'
-  //           : parseInt(currentNewestTeacher.maxTeacherCode) + 1 + '',
-  //       email: createTeacherDto.email,
-  //       password: hashPassword,
-  //       last_name: createTeacherDto.last_name,
-  //       first_name: createTeacherDto.first_name,
-  //       phone_number: createTeacherDto.phone_number,
-  //       description: createTeacherDto.description,
-  //     }),
-  //   );
+    const newStudent = await this.studentRepository.save(
+      this.studentRepository.create({
+        student_code:
+          !currentNewestStudent || !currentNewestStudent.maxStudentCode
+            ? '20230001'
+            : parseInt(currentNewestStudent.maxStudentCode) + 1 + '',
+        email: createStudentDto.email,
+        password: hashPassword,
+        last_name: createStudentDto.last_name,
+        first_name: createStudentDto.first_name,
+        gender: createStudentDto.gender,
+        phone_number: createStudentDto.phone_number,
+        age: createStudentDto.age,
+      }),
+    );
 
-  //   // send mail:
+    // send mail:
 
-  //   return newTeacher;
-  // }
+    return newStudent;
+  }
 }

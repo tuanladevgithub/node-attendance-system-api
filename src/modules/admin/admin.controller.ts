@@ -22,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UserGender } from 'src/types/common.type';
 import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
+import { CreateStudentDto } from '../student/dto/create-student.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -109,6 +110,13 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importStudentsFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('create-student')
+  @UseGuards(AdminAuthGuard)
+  createNewStudent(@Body() createStudentDto: CreateStudentDto) {
+    return this.adminService.createNewStudent(createStudentDto);
   }
 
   @Get('search-course')
