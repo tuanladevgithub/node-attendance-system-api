@@ -7,6 +7,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @HttpCode(HttpStatus.OK)
+  @Post('login-student')
+  loginStudent(@Body() loginDto: LoginDto) {
+    return this.authService.loginStudent(loginDto.email, loginDto.pass);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('login-teacher')
   loginTeacher(@Body() loginDto: LoginDto) {
     return this.authService.loginTeacher(loginDto.email, loginDto.pass);

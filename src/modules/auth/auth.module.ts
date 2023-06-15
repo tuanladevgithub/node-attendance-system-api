@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { TeacherModule } from '../teacher/teacher.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminModule } from '../admin/admin.module';
+import { StudentModule } from '../student/student.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AdminModule } from '../admin/admin.module';
     }),
     AdminModule,
     TeacherModule,
+    StudentModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],
