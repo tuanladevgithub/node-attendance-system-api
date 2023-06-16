@@ -23,6 +23,7 @@ import { UserGender } from 'src/types/common.type';
 import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
 import { CreateStudentDto } from '../student/dto/create-student.dto';
+import { CreateCourseDto } from '../course/dto/create-course.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -141,5 +142,12 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importCoursesFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('create-course')
+  @UseGuards(AdminAuthGuard)
+  createNewCourse(@Body() createCourseDto: CreateCourseDto) {
+    return this.adminService.createNewCourse(createCourseDto);
   }
 }

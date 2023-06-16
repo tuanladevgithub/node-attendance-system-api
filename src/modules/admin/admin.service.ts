@@ -17,6 +17,8 @@ import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
 import { TeacherService } from '../teacher/teacher.service';
 import { CreateStudentDto } from '../student/dto/create-student.dto';
 import { StudentService } from '../student/student.service';
+import { CreateCourseDto } from '../course/dto/create-course.dto';
+import { CourseService } from '../course/course.service';
 
 @Injectable()
 export class AdminService {
@@ -24,6 +26,8 @@ export class AdminService {
     private readonly teacherService: TeacherService,
 
     private readonly studentService: StudentService,
+
+    private readonly courseService: CourseService,
 
     @InjectRepository(AdminEntity)
     private readonly adminRepository: Repository<AdminEntity>,
@@ -543,5 +547,9 @@ export class AdminService {
       await this.courseRepository.insert(records);
       return { isSuccess: true, errors: [] };
     }
+  }
+
+  createNewCourse(createCourseDto: CreateCourseDto) {
+    return this.courseService.createNewCourse(createCourseDto);
   }
 }
