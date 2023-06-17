@@ -26,8 +26,8 @@ export class CourseService {
 
     const teacher = await this.teacherRepository.findOneOrFail({
       where: [
-        { teacher_code: createCourseDto.teacherCodeOrEmail },
-        { email: createCourseDto.teacherCodeOrEmail },
+        { teacher_code: createCourseDto.teacher_code_or_email },
+        { email: createCourseDto.teacher_code_or_email },
       ],
     });
 

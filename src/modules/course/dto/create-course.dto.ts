@@ -1,7 +1,7 @@
 export class CreateCourseDto {
   m_subject_id: number;
 
-  teacherCodeOrEmail: string;
+  teacher_code_or_email: string;
 
   start_date: string;
 
