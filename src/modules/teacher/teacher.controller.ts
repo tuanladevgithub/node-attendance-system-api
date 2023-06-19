@@ -73,6 +73,16 @@ export class TeacherController {
     );
   }
 
+  @Get('course/:courseId/student')
+  @UseGuards(TeacherAuthGuard)
+  getListOfCourseStudents(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.getListOfCourseStudents(id, parseInt(courseId));
+  }
+
   @Get('today-schedule')
   @UseGuards(TeacherAuthGuard)
   getTodayListCourse(

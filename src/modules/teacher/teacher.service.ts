@@ -249,6 +249,26 @@ export class TeacherService {
     return await this.courseRepository.save(course);
   }
 
+  async getListOfCourseStudents(teacherId: number, courseId: number) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { t_teacher_id: teacherId, id: courseId },
+    });
+
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoin(
+        CourseParticipationEntity,
+        'course_participation',
+        'course_participation.t_student_id = student.id',
+      )
+      .where('course_participation.t_course_id = :courseId', {
+        courseId: course.id,
+      })
+      .getMany();
+
+    return students;
+  }
+
   async addAttendanceSession(
     teacherId: number,
     courseId: number,
