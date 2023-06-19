@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -50,6 +51,28 @@ export class TeacherController {
     return this.teacherService.getListCourse(id, search);
   }
 
+  @Get('course/:courseId')
+  @UseGuards(TeacherAuthGuard)
+  getCourseData(@Req() req: any, @Param('courseId') courseId: string) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.getCourseData(id, parseInt(courseId));
+  }
+
+  @Patch('course/:courseId')
+  @UseGuards(TeacherAuthGuard)
+  updateCourse(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Body('description') description?: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.updateCourse(
+      id,
+      parseInt(courseId),
+      description,
+    );
+  }
+
   @Get('today-schedule')
   @UseGuards(TeacherAuthGuard)
   getTodayListCourse(
@@ -59,13 +82,6 @@ export class TeacherController {
   ) {
     const { id }: JwtTeacherPayload = req['teacher-payload'];
     return this.teacherService.getTodaySchedule(id, today, dayOfWeek);
-  }
-
-  @Get('course/:courseId')
-  @UseGuards(TeacherAuthGuard)
-  getCourseData(@Req() req: any, @Param('courseId') courseId: string) {
-    const { id }: JwtTeacherPayload = req['teacher-payload'];
-    return this.teacherService.getCourseData(id, parseInt(courseId));
   }
 
   @Post('course/:courseId/add-session')
@@ -81,6 +97,19 @@ export class TeacherController {
       id,
       parseInt(courseId),
       createAttendanceSessionDto,
+    );
+  }
+
+  @Get('course/:courseId/session')
+  @UseGuards(TeacherAuthGuard)
+  getListOfCourseAttendanceSession(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.getListOfCourseAttendanceSession(
+      id,
+      parseInt(courseId),
     );
   }
 

@@ -197,18 +197,35 @@ export class TeacherService {
   }
 
   async getCourseData(teacherId: number, courseId: number) {
-    const course = await this.courseRepository.findOne({
+    const course = await this.courseRepository.findOneOrFail({
       where: { id: courseId, t_teacher_id: teacherId },
+      relations: {
+        subject: true,
+        teacher: true,
+        courseSchedules: true,
+      },
     });
 
-    if (!course) throw new NotFoundException('Course does not exist.');
+    return course;
+  }
 
-    const sessions = await this.attendanceSessionRepository.find({
-      where: { t_course_id: course.id },
-      order: { created_at: 'DESC' },
+  async updateCourse(
+    teacherId: number,
+    courseId: number,
+    description?: string,
+  ) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId, t_teacher_id: teacherId },
+      relations: {
+        subject: true,
+        teacher: true,
+        courseSchedules: true,
+      },
     });
 
-    return { course, attendanceSessions: sessions };
+    course.description = description;
+
+    return await this.courseRepository.save(course);
   }
 
   async addAttendanceSession(
@@ -266,6 +283,21 @@ export class TeacherService {
         description: description || 'Regular class session',
       }),
     );
+  }
+
+  async getListOfCourseAttendanceSession(teacherId: number, courseId: number) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, t_teacher_id: teacherId },
+    });
+
+    if (!course) throw new NotFoundException('Course does not exist.');
+
+    const sessions = await this.attendanceSessionRepository.find({
+      where: { t_course_id: course.id },
+      order: { created_at: 'DESC' },
+    });
+
+    return { course, attendanceSessions: sessions };
   }
 
   async getAttendanceSessionData(
