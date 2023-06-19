@@ -197,14 +197,35 @@ export class TeacherService {
   }
 
   async getCourseData(teacherId: number, courseId: number) {
-    const course = await this.courseRepository.findOneOrFail({
-      where: { id: courseId, t_teacher_id: teacherId },
-      relations: {
-        subject: true,
-        teacher: true,
-        courseSchedules: true,
-      },
-    });
+    const course = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .leftJoinAndMapOne(
+        'course.teacher',
+        TeacherEntity,
+        'teacher',
+        'teacher.id = course.t_teacher_id',
+      )
+      .leftJoinAndMapMany(
+        'course.courseSchedules',
+        CourseScheduleEntity,
+        'schedule',
+        'schedule.t_course_id = course.id',
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      )
+      .where('course.id = :courseId', { courseId })
+      .andWhere('course.t_teacher_id = :teacherId', { teacherId })
+      .orderBy('schedule.start_hour', 'ASC')
+      .addOrderBy('schedule.start_min', 'ASC')
+      .getOneOrFail();
 
     return course;
   }
