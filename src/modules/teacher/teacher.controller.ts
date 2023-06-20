@@ -78,9 +78,14 @@ export class TeacherController {
   getListOfCourseStudents(
     @Req() req: any,
     @Param('courseId') courseId: string,
+    @Query('search') search?: string,
   ) {
     const { id }: JwtTeacherPayload = req['teacher-payload'];
-    return this.teacherService.getListOfCourseStudents(id, parseInt(courseId));
+    return this.teacherService.getListOfCourseStudents(
+      id,
+      parseInt(courseId),
+      search,
+    );
   }
 
   @Get('today-schedule')

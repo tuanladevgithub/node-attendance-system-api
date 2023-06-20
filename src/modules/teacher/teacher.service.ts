@@ -249,12 +249,16 @@ export class TeacherService {
     return await this.courseRepository.save(course);
   }
 
-  async getListOfCourseStudents(teacherId: number, courseId: number) {
+  async getListOfCourseStudents(
+    teacherId: number,
+    courseId: number,
+    search?: string,
+  ) {
     const course = await this.courseRepository.findOneOrFail({
       where: { t_teacher_id: teacherId, id: courseId },
     });
 
-    const students = await this.studentRepository
+    const query = this.studentRepository
       .createQueryBuilder('student')
       .leftJoin(
         CourseParticipationEntity,
@@ -263,10 +267,33 @@ export class TeacherService {
       )
       .where('course_participation.t_course_id = :courseId', {
         courseId: course.id,
-      })
-      .getMany();
+      });
 
-    return students;
+    if (search) {
+      search = search.trim();
+      query.andWhere(
+        new Brackets((qb) =>
+          qb
+            .where('student.student_code LIKE :studentCode', {
+              studentCode: `%${search}%`,
+            })
+            .orWhere('student.email LIKE :email', {
+              email: `%${search}%`,
+            })
+            .orWhere('student.first_name LIKE :firstName', {
+              firstName: `%${search}%`,
+            })
+            .orWhere('student.last_name LIKE :lastName', {
+              lastName: `%${search}%`,
+            })
+            .orWhere('student.phone_number LIKE :phoneNumber', {
+              phoneNumber: `%${search}%`,
+            }),
+        ),
+      );
+    }
+
+    return await query.getMany();
   }
 
   async addAttendanceSession(
