@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { Brackets, DataSource, Not, Repository } from 'typeorm';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
@@ -305,7 +301,7 @@ export class TeacherService {
       where: { id: courseId, t_teacher_id: teacherId },
     });
 
-    if (!course) throw new NotFoundException('Course does not exist.');
+    if (!course) throw new BadRequestException('Course does not exist.');
 
     const {
       session_date,
@@ -358,7 +354,7 @@ export class TeacherService {
       where: { id: courseId, t_teacher_id: teacherId },
     });
 
-    if (!course) throw new NotFoundException('Course does not exist.');
+    if (!course) throw new BadRequestException('Course does not exist.');
 
     const sessions = await this.attendanceSessionRepository.find({
       where: { t_course_id: course.id },
@@ -377,13 +373,13 @@ export class TeacherService {
       where: { id: courseId, t_teacher_id: teacherId },
     });
 
-    if (!course) throw new NotFoundException('Course does not exist.');
+    if (!course) throw new BadRequestException('Course does not exist.');
 
     const session = await this.attendanceSessionRepository.findOne({
       where: { id: sessionId, t_course_id: course.id },
     });
 
-    if (!session) throw new NotFoundException('Session does not exist.');
+    if (!session) throw new BadRequestException('Session does not exist.');
 
     return session;
   }
@@ -397,13 +393,13 @@ export class TeacherService {
       where: { id: courseId, t_teacher_id: teacherId },
     });
 
-    if (!course) throw new NotFoundException('Course does not exist.');
+    if (!course) throw new BadRequestException('Course does not exist.');
 
     const session = await this.attendanceSessionRepository.findOne({
       where: { id: sessionId, t_course_id: course.id },
     });
 
-    if (!session) throw new NotFoundException('Session does not exist.');
+    if (!session) throw new BadRequestException('Session does not exist.');
 
     await this.dataSource.transaction(async (manager) => {
       await manager.delete(AttendanceResultEntity, {
