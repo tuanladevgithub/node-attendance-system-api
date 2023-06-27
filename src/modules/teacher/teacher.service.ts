@@ -75,10 +75,9 @@ export class TeacherService {
     const newTeacher = await this.teacherRepository.save(
       this.teacherRepository.create({
         m_department_id: createTeacherDto.m_department_id,
-        teacher_code:
-          !currentNewestTeacher || !currentNewestTeacher.maxTeacherCode
-            ? '20230001'
-            : parseInt(currentNewestTeacher.maxTeacherCode) + 1 + '',
+        teacher_code: !currentNewestTeacher?.maxTeacherCode
+          ? '20230001'
+          : parseInt(currentNewestTeacher.maxTeacherCode) + 1 + '',
         email: createTeacherDto.email,
         password: hashPassword,
         last_name: createTeacherDto.last_name,

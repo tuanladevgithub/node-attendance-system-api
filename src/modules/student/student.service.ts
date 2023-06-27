@@ -52,10 +52,9 @@ export class StudentService {
 
     const newStudent = await this.studentRepository.save(
       this.studentRepository.create({
-        student_code:
-          !currentNewestStudent || !currentNewestStudent.maxStudentCode
-            ? '20230001'
-            : parseInt(currentNewestStudent.maxStudentCode) + 1 + '',
+        student_code: !currentNewestStudent?.maxStudentCode
+          ? '20230001'
+          : parseInt(currentNewestStudent.maxStudentCode) + 1 + '',
         email: createStudentDto.email,
         password: hashPassword,
         last_name: createStudentDto.last_name,
