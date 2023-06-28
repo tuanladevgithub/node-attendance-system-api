@@ -14,4 +14,11 @@ export class StudentController {
     const { password, ...result } = await this.studentService.getOneById(id);
     return result;
   }
+
+  @Get('course')
+  @UseGuards(StudentAuthGuard)
+  getListCourse(@Req() req: any) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getListCourse(id);
+  }
 }

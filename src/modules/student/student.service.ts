@@ -4,6 +4,10 @@ import { StudentEntity } from 'src/db/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CreateStudentDto } from './dto/create-student.dto';
+import { CourseEntity } from 'src/db/entities/course.entity';
+import { SubjectEntity } from 'src/db/entities/subject.entity';
+import { TeacherEntity } from 'src/db/entities/teacher.entity';
+import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 
 @Injectable()
 export class StudentService {
@@ -12,6 +16,9 @@ export class StudentService {
 
     @InjectRepository(StudentEntity)
     private readonly studentRepository: Repository<StudentEntity>,
+
+    @InjectRepository(CourseEntity)
+    private readonly courseRepository: Repository<CourseEntity>,
   ) {}
 
   getOneById(id: number): Promise<StudentEntity> {
@@ -68,5 +75,30 @@ export class StudentService {
     // send mail:
 
     return newStudent;
+  }
+
+  getListCourse(studentId: number) {
+    const query = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoin(
+        CourseParticipationEntity,
+        'participation',
+        'participation.t_course_id = course.id',
+      )
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .leftJoinAndMapOne(
+        'course.teacher',
+        TeacherEntity,
+        'teacher',
+        'teacher.id = course.t_teacher_id',
+      )
+      .where('participation.t_student_id = :studentId', { studentId });
+
+    return query.getMany();
   }
 }
