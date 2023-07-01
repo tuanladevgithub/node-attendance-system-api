@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
@@ -9,6 +13,7 @@ import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
+import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 
 @Injectable()
 export class StudentService {
@@ -23,6 +28,12 @@ export class StudentService {
 
     @InjectRepository(CourseScheduleEntity)
     private readonly courseScheduleRepository: Repository<CourseScheduleEntity>,
+
+    @InjectRepository(CourseParticipationEntity)
+    private readonly courseParticipationRepository: Repository<CourseParticipationEntity>,
+
+    @InjectRepository(AttendanceSessionEntity)
+    private readonly attendanceSessionRepository: Repository<AttendanceSessionEntity>,
   ) {}
 
   getOneById(id: number): Promise<StudentEntity> {
@@ -106,6 +117,46 @@ export class StudentService {
     return query.getMany();
   }
 
+  async getCourseData(studentId: number, courseId: number) {
+    const courseParticipation =
+      await this.courseParticipationRepository.findOne({
+        where: { t_student_id: studentId, t_course_id: courseId },
+      });
+    if (!courseParticipation)
+      throw new ForbiddenException('Student cannot access this course.');
+
+    const course = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .leftJoinAndMapOne(
+        'course.teacher',
+        TeacherEntity,
+        'teacher',
+        'teacher.id = course.t_teacher_id',
+      )
+      .leftJoinAndMapMany(
+        'course.courseSchedules',
+        CourseScheduleEntity,
+        'schedule',
+        'schedule.t_course_id = course.id',
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      )
+      .where('course.id = :courseId', { courseId })
+      .orderBy('schedule.start_hour', 'ASC')
+      .addOrderBy('schedule.start_min', 'ASC')
+      .getOneOrFail();
+
+    return course;
+  }
+
   getListSchedule(studentId: number) {
     return this.courseScheduleRepository
       .createQueryBuilder('schedule')
@@ -129,5 +180,24 @@ export class StudentService {
       .where('participation.t_student_id = :studentId', { studentId })
       .groupBy('schedule.id')
       .getMany();
+  }
+
+  async getListOfCourseAttendanceSession(studentId: number, courseId: number) {
+    const courseParticipation =
+      await this.courseParticipationRepository.findOne({
+        where: { t_student_id: studentId, t_course_id: courseId },
+      });
+    if (!courseParticipation)
+      throw new ForbiddenException('Student cannot access this course.');
+
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) throw new BadRequestException('Course does not exist.');
+
+    return await this.attendanceSessionRepository.find({
+      where: { t_course_id: course.id },
+      order: { created_at: 'DESC' },
+    });
   }
 }

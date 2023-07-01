@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
+import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
+import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
       StudentEntity,
       CourseEntity,
       CourseScheduleEntity,
+      CourseParticipationEntity,
+      AttendanceSessionEntity,
     ]),
   ],
   controllers: [StudentController],

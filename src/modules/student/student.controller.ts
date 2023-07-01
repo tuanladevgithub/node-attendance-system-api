@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { StudentService } from './student.service';
 import { JwtStudentPayload } from 'src/types/auth.type';
 import { StudentAuthGuard } from '../auth/student-auth.guard';
@@ -22,10 +22,30 @@ export class StudentController {
     return this.studentService.getListCourse(id);
   }
 
+  @Get('course/:courseId')
+  @UseGuards(StudentAuthGuard)
+  getCourseData(@Req() req: any, @Param('courseId') courseId: string) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getCourseData(id, parseInt(courseId));
+  }
+
   @Get('schedule')
   @UseGuards(StudentAuthGuard)
   getListSchedule(@Req() req: any) {
     const { id }: JwtStudentPayload = req['student-payload'];
     return this.studentService.getListSchedule(id);
+  }
+
+  @Get('course/:courseId/session')
+  @UseGuards(StudentAuthGuard)
+  getListOfCourseAttendanceSession(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+  ) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getListOfCourseAttendanceSession(
+      id,
+      parseInt(courseId),
+    );
   }
 }
