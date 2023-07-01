@@ -8,6 +8,7 @@ import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
+import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 
 @Injectable()
 export class StudentService {
@@ -19,6 +20,9 @@ export class StudentService {
 
     @InjectRepository(CourseEntity)
     private readonly courseRepository: Repository<CourseEntity>,
+
+    @InjectRepository(CourseScheduleEntity)
+    private readonly courseScheduleRepository: Repository<CourseScheduleEntity>,
   ) {}
 
   getOneById(id: number): Promise<StudentEntity> {
@@ -100,5 +104,30 @@ export class StudentService {
       .where('participation.t_student_id = :studentId', { studentId });
 
     return query.getMany();
+  }
+
+  getListSchedule(studentId: number) {
+    return this.courseScheduleRepository
+      .createQueryBuilder('schedule')
+      .leftJoinAndMapOne(
+        'schedule.course',
+        CourseEntity,
+        'course',
+        'course.id = schedule.t_course_id',
+      )
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .innerJoin(
+        CourseParticipationEntity,
+        'participation',
+        'participation.t_course_id = course.id',
+      )
+      .where('participation.t_student_id = :studentId', { studentId })
+      .groupBy('schedule.id')
+      .getMany();
   }
 }
