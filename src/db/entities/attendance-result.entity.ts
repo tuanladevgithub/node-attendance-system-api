@@ -18,7 +18,7 @@ export class AttendanceResultEntity {
   record_time: string;
 
   @Column({ type: 'tinyint', name: 'record_by_teacher', default: 0 })
-  record_by_teacher: string;
+  record_by_teacher: number;
 
   @Column({ type: 'varchar', name: 'ip_address', nullable: true })
   ip_address?: string;

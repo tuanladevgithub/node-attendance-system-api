@@ -15,7 +15,7 @@ export const dataSourceOptions: DataSourceOptions = {
   synchronize: false,
   migrationsTableName: 'system_migrations',
   charset: 'utf8mb4_general_ci',
-  timezone: 'Z',
+  timezone: '+07:00',
   logging: ['query', 'error', 'warn'],
 };
 
