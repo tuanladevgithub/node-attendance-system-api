@@ -14,6 +14,8 @@ import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
+import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
+import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity';
 
 @Injectable()
 export class StudentService {
@@ -34,6 +36,9 @@ export class StudentService {
 
     @InjectRepository(AttendanceSessionEntity)
     private readonly attendanceSessionRepository: Repository<AttendanceSessionEntity>,
+
+    @InjectRepository(AttendanceResultEntity)
+    private readonly attendanceResultRepository: Repository<AttendanceResultEntity>,
   ) {}
 
   getOneById(id: number): Promise<StudentEntity> {
@@ -199,5 +204,67 @@ export class StudentService {
       where: { t_course_id: course.id },
       order: { created_at: 'DESC' },
     });
+  }
+
+  async getAttendanceSessionData(
+    studentId: number,
+    courseId: number,
+    sessionId: number,
+  ) {
+    const courseParticipation =
+      await this.courseParticipationRepository.findOne({
+        where: { t_student_id: studentId, t_course_id: courseId },
+      });
+    if (!courseParticipation)
+      throw new ForbiddenException('Student cannot access this course.');
+
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) throw new BadRequestException('Course does not exist.');
+
+    const attendanceSession =
+      await this.attendanceSessionRepository.findOneOrFail({
+        where: { t_course_id: course.id, id: sessionId },
+      });
+
+    return attendanceSession;
+  }
+
+  async getSessionResultForStudent(
+    studentId: number,
+    courseId: number,
+    sessionId: number,
+  ) {
+    const courseParticipation =
+      await this.courseParticipationRepository.findOne({
+        where: { t_student_id: studentId, t_course_id: courseId },
+      });
+    if (!courseParticipation)
+      throw new ForbiddenException('Student cannot access this course.');
+
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) throw new BadRequestException('Course does not exist.');
+
+    const attendanceSession =
+      await this.attendanceSessionRepository.findOneOrFail({
+        where: { t_course_id: course.id, id: sessionId },
+      });
+
+    return await this.attendanceResultRepository
+      .createQueryBuilder('session_result')
+      .leftJoinAndMapOne(
+        'session_result.attendanceStatus',
+        AttendanceStatusEntity,
+        'status',
+        'status.id = session_result.m_attendance_status_id',
+      )
+      .where('session_result.t_attendance_session_id = :sessionId', {
+        sessionId: attendanceSession.id,
+      })
+      .andWhere('session_result.t_student_id = :studentId', { studentId })
+      .getOne();
   }
 }

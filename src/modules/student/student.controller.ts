@@ -48,4 +48,34 @@ export class StudentController {
       parseInt(courseId),
     );
   }
+
+  @Get('course/:courseId/session/:sessionId')
+  @UseGuards(StudentAuthGuard)
+  getAttendanceSessionData(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getAttendanceSessionData(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
+    );
+  }
+
+  @Get('course/:courseId/session/:sessionId/result')
+  @UseGuards(StudentAuthGuard)
+  getSessionResultForStudent(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getSessionResultForStudent(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
+    );
+  }
 }
