@@ -9,5 +9,9 @@ export class CreateAttendanceSessionDto {
 
   end_min: number;
 
+  overtime_minutes_for_late?: number;
+
+  password?: string;
+
   description?: string;
 }

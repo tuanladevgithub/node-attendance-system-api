@@ -299,7 +299,6 @@ export class TeacherService {
     const course = await this.courseRepository.findOne({
       where: { id: courseId, t_teacher_id: teacherId },
     });
-
     if (!course) throw new BadRequestException('Course does not exist.');
 
     const {
@@ -308,6 +307,8 @@ export class TeacherService {
       start_min,
       end_hour,
       end_min,
+      overtime_minutes_for_late,
+      password,
       description,
     } = createAttendanceSessionDto;
 
@@ -334,15 +335,46 @@ export class TeacherService {
     if (start_hour === end_hour && start_min > end_min)
       throw new BadRequestException('Start time must be less than end time.');
 
+    if (overtime_minutes_for_late && overtime_minutes_for_late < 1)
+      throw new BadRequestException(
+        'Overtime minutes for late must be greater than or equal to 1.',
+      );
+
+    const existSession = await this.attendanceSessionRepository
+      .createQueryBuilder('session')
+      .where('session.t_course_id = :courseId', { courseId: course.id })
+      .andWhere('session.session_date = :sessionDate', {
+        sessionDate: session_date,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          return qb
+            .where(
+              '(session.start_hour * 60 + session.start_min) <= :start AND (session.end_hour * 60 + session.end_min) > :start',
+              { start: start_hour * 60 + start_min },
+            )
+            .orWhere(
+              '(session.start_hour * 60 + session.start_min) < :end AND (session.end_hour * 60 + session.end_min) >= :end',
+              { end: end_hour * 60 + end_min },
+            );
+        }),
+      )
+      .getOne();
+    if (existSession)
+      throw new BadRequestException(
+        'The session time is overlapped with another session.',
+      );
+
     return await this.attendanceSessionRepository.save(
       this.attendanceSessionRepository.create({
         t_course_id: course.id,
-        // password,
+        password,
         session_date,
         start_hour,
         start_min,
         end_hour,
         end_min,
+        overtime_minutes_for_late,
         description: description || 'Regular class session',
       }),
     );
