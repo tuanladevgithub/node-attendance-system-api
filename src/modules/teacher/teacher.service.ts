@@ -14,11 +14,15 @@ import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { DayOfWeek } from 'src/types/common.type';
+import { JwtService } from '@nestjs/jwt';
+import { JwtQrCodePayload } from 'src/types/qr-code.type';
 
 @Injectable()
 export class TeacherService {
   constructor(
     private dataSource: DataSource,
+
+    private jwtService: JwtService,
 
     @InjectRepository(TeacherEntity)
     private readonly teacherRepository: Repository<TeacherEntity>,
@@ -473,5 +477,31 @@ export class TeacherService {
       session,
       students,
     };
+  }
+
+  async getAttendanceSessionQrCodeData(
+    teacherId: number,
+    courseId: number,
+    sessionId: number,
+  ) {
+    const session = await this.getAttendanceSessionData(
+      teacherId,
+      courseId,
+      sessionId,
+    );
+
+    const token = await this.jwtService.signAsync(
+      {
+        courseId: session.t_course_id,
+        sessionId: session.id,
+        sub: teacherId,
+      } as JwtQrCodePayload,
+      {
+        secret: 'QR_SECRET_KEY',
+        expiresIn: '60s',
+      },
+    );
+
+    return token;
   }
 }

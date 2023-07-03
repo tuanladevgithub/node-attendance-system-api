@@ -16,11 +16,16 @@ import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
 import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity';
+import { JwtQrCodePayload } from 'src/types/qr-code.type';
+import { JwtService } from '@nestjs/jwt';
+import { add, isAfter, isBefore, parse } from 'date-fns';
 
 @Injectable()
 export class StudentService {
   constructor(
     private dataSource: DataSource,
+
+    private jwtService: JwtService,
 
     @InjectRepository(StudentEntity)
     private readonly studentRepository: Repository<StudentEntity>,
@@ -39,6 +44,9 @@ export class StudentService {
 
     @InjectRepository(AttendanceResultEntity)
     private readonly attendanceResultRepository: Repository<AttendanceResultEntity>,
+
+    @InjectRepository(AttendanceStatusEntity)
+    private readonly attendanceStatusRepository: Repository<AttendanceStatusEntity>,
   ) {}
 
   getOneById(id: number): Promise<StudentEntity> {
@@ -266,5 +274,119 @@ export class StudentService {
       })
       .andWhere('session_result.t_student_id = :studentId', { studentId })
       .getOne();
+  }
+
+  async recordAttendanceSession(
+    studentId: number,
+    qrToken: string,
+    recordDate: string,
+    recordHour: number,
+    recordMin: number,
+    ipAddr?: string,
+  ) {
+    let courseId: number, sessionId: number;
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtQrCodePayload>(
+        qrToken,
+        {
+          secret: 'QR_SECRET_KEY',
+        },
+      );
+      courseId = payload.courseId;
+      sessionId = payload.sessionId;
+    } catch (error) {
+      throw new BadRequestException('QR-code invalid or expired.');
+    }
+
+    const participation = await this.courseParticipationRepository.findOne({
+      where: { t_course_id: courseId, t_student_id: studentId },
+    });
+    if (!participation)
+      throw new ForbiddenException('You cannot access this course.');
+
+    const session = await this.attendanceSessionRepository.findOne({
+      where: { t_course_id: courseId, id: sessionId },
+    });
+    if (!session) throw new BadRequestException('Course not found.');
+
+    const attendanceResult = await this.attendanceResultRepository.findOne({
+      where: { t_attendance_session_id: session.id, t_student_id: studentId },
+    });
+    if (attendanceResult)
+      throw new BadRequestException('You have already recorded.');
+
+    // if (ipAddr) {
+    //   const attendanceResultSameIpAddr =
+    //     await this.attendanceResultRepository.findOne({
+    //       where: {
+    //         t_attendance_session_id: session.id,
+    //         record_by_teacher: 0,
+    //         ip_address: ipAddr,
+    //       },
+    //     });
+    //   if (attendanceResultSameIpAddr)
+    //     throw new BadRequestException('Your IP address is duplicated.');
+    // }
+
+    const recordDatetime = new Date(recordDate);
+    recordDatetime.setHours(recordHour, recordMin);
+    console.log(recordDatetime);
+
+    const sessionDatetimeStart = new Date(session.session_date);
+    sessionDatetimeStart.setHours(session.start_hour, session.start_min);
+    console.log(sessionDatetimeStart);
+
+    const sessionDatetimeEnd = new Date(session.session_date);
+    sessionDatetimeEnd.setHours(session.end_hour, session.end_min);
+    console.log(sessionDatetimeEnd);
+
+    const sessionDatetimeOvertime = add(sessionDatetimeEnd, {
+      minutes: session.overtime_minutes_for_late,
+    });
+    console.log(sessionDatetimeOvertime);
+
+    if (isBefore(recordDatetime, sessionDatetimeStart))
+      throw new BadRequestException('Session has not started.');
+
+    if (isAfter(recordDatetime, sessionDatetimeOvertime))
+      throw new BadRequestException('Session has finished.');
+
+    if (
+      recordDatetime.getTime() >= sessionDatetimeStart.getTime() &&
+      recordDatetime.getTime() <= sessionDatetimeEnd.getTime()
+    ) {
+      const presentStatus = await this.attendanceStatusRepository.findOneOrFail(
+        {
+          where: { acronym: 'P' },
+        },
+      );
+      await this.attendanceResultRepository.save(
+        this.attendanceResultRepository.create({
+          t_attendance_session_id: session.id,
+          t_student_id: studentId,
+          m_attendance_status_id: presentStatus.id,
+          record_time: recordDatetime.toString(),
+          // ip_address: ipAddr,
+        }),
+      );
+    }
+
+    if (
+      recordDatetime.getTime() > sessionDatetimeEnd.getTime() &&
+      recordDatetime.getTime() <= sessionDatetimeOvertime.getTime()
+    ) {
+      const lateStatus = await this.attendanceStatusRepository.findOneOrFail({
+        where: { acronym: 'L' },
+      });
+      await this.attendanceResultRepository.save(
+        this.attendanceResultRepository.create({
+          t_attendance_session_id: session.id,
+          t_student_id: studentId,
+          m_attendance_status_id: lateStatus.id,
+          record_time: recordDatetime.toString(),
+          // ip_address: ipAddr,
+        }),
+      );
+    }
   }
 }

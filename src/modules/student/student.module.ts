@@ -8,6 +8,7 @@ import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
+import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity
       CourseParticipationEntity,
       AttendanceSessionEntity,
       AttendanceResultEntity,
+      AttendanceStatusEntity,
     ]),
   ],
   controllers: [StudentController],

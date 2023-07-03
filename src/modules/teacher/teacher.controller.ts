@@ -175,4 +175,20 @@ export class TeacherController {
       parseInt(sessionId),
     );
   }
+
+  @Get('course/:courseId/session/:sessionId/qr-code')
+  @UseGuards(TeacherAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  getAttendanceSessionQrCodeData(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.getAttendanceSessionQrCodeData(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
+    );
+  }
 }

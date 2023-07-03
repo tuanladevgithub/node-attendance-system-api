@@ -1,7 +1,18 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { StudentService } from './student.service';
 import { JwtStudentPayload } from 'src/types/auth.type';
 import { StudentAuthGuard } from '../auth/student-auth.guard';
+import { Request } from 'express';
 
 @Controller('student')
 export class StudentController {
@@ -76,6 +87,29 @@ export class StudentController {
       id,
       parseInt(courseId),
       parseInt(sessionId),
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('record-attendance-session')
+  @UseGuards(StudentAuthGuard)
+  recordAttendanceSession(
+    @Req() req: Request & { 'student-payload': JwtStudentPayload },
+    @Body('recordDate') recordDate: string,
+    @Body('recordHour') recordHour: number,
+    @Body('recordMin') recordMin: number,
+  ) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+
+    const qrToken = req.headers['qr-token'] as string;
+
+    return this.studentService.recordAttendanceSession(
+      id,
+      qrToken,
+      recordDate,
+      recordHour,
+      recordMin,
+      req.ip,
     );
   }
 }
