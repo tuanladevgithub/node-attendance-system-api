@@ -36,6 +36,9 @@ export class AttendanceSessionEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'int', name: 'end_min', unsigned: true })
   end_min: number;
 
+  @Column({ type: 'int', name: 'overtime_minutes_for_late', nullable: true })
+  overtime_minutes_for_late?: number;
+
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;
 
