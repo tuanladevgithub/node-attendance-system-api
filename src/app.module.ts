@@ -11,6 +11,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { DepartmentEntity } from './db/entities/department.entity';
 import { SubjectEntity } from './db/entities/subject.entity';
 import { StudentModule } from './modules/student/student.module';
+import { AttendanceStatusEntity } from './db/entities/attendance-status.entity';
 
 @Module({
   imports: [
@@ -20,7 +21,11 @@ import { StudentModule } from './modules/student/student.module';
     TypeOrmModule.forRootAsync({
       useFactory: () => dataSourceOptions,
     }),
-    TypeOrmModule.forFeature([DepartmentEntity, SubjectEntity]),
+    TypeOrmModule.forFeature([
+      DepartmentEntity,
+      SubjectEntity,
+      AttendanceStatusEntity,
+    ]),
     AuthModule,
     TeacherModule,
     CourseModule,
