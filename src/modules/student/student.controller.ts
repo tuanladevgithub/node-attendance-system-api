@@ -13,10 +13,14 @@ import { StudentService } from './student.service';
 import { JwtStudentPayload } from 'src/types/auth.type';
 import { StudentAuthGuard } from '../auth/student-auth.guard';
 import { Request } from 'express';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Controller('student')
 export class StudentController {
-  constructor(private readonly studentService: StudentService) {}
+  constructor(
+    private readonly studentService: StudentService,
+    private readonly realtimeGateway: RealtimeGateway,
+  ) {}
 
   @Get('get-info')
   @UseGuards(StudentAuthGuard)
@@ -93,12 +97,20 @@ export class StudentController {
   @HttpCode(HttpStatus.OK)
   @Post('record-attendance-session')
   @UseGuards(StudentAuthGuard)
-  recordAttendanceSession(
+  async recordAttendanceSession(
     @Req() req: Request & { 'student-payload': JwtStudentPayload },
   ) {
     const { id }: JwtStudentPayload = req['student-payload'];
     const qrToken = req.headers['qr-token'] as string;
 
-    return this.studentService.recordAttendanceSession(id, qrToken, req.ip);
+    const result = await this.studentService.recordAttendanceSession(
+      id,
+      qrToken,
+      req.ip,
+    );
+
+    this.realtimeGateway.pushNotificationStudentTakeRecord();
+
+    return result;
   }
 }
