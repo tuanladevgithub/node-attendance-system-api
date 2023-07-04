@@ -95,21 +95,10 @@ export class StudentController {
   @UseGuards(StudentAuthGuard)
   recordAttendanceSession(
     @Req() req: Request & { 'student-payload': JwtStudentPayload },
-    @Body('recordDate') recordDate: string,
-    @Body('recordHour') recordHour: number,
-    @Body('recordMin') recordMin: number,
   ) {
     const { id }: JwtStudentPayload = req['student-payload'];
-
     const qrToken = req.headers['qr-token'] as string;
 
-    return this.studentService.recordAttendanceSession(
-      id,
-      qrToken,
-      recordDate,
-      recordHour,
-      recordMin,
-      req.ip,
-    );
+    return this.studentService.recordAttendanceSession(id, qrToken, req.ip);
   }
 }

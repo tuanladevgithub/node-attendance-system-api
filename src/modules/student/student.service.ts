@@ -279,9 +279,6 @@ export class StudentService {
   async recordAttendanceSession(
     studentId: number,
     qrToken: string,
-    recordDate: string,
-    recordHour: number,
-    recordMin: number,
     ipAddr?: string,
   ) {
     let courseId: number, sessionId: number;
@@ -295,6 +292,7 @@ export class StudentService {
       courseId = payload.courseId;
       sessionId = payload.sessionId;
     } catch (error) {
+      console.log(error);
       throw new BadRequestException('QR-code invalid or expired.');
     }
 
@@ -312,8 +310,7 @@ export class StudentService {
     const attendanceResult = await this.attendanceResultRepository.findOne({
       where: { t_attendance_session_id: session.id, t_student_id: studentId },
     });
-    if (attendanceResult)
-      throw new BadRequestException('You have already recorded.');
+    if (attendanceResult) return attendanceResult;
 
     // if (ipAddr) {
     //   const attendanceResultSameIpAddr =
@@ -328,8 +325,7 @@ export class StudentService {
     //     throw new BadRequestException('Your IP address is duplicated.');
     // }
 
-    const recordDatetime = new Date(recordDate);
-    recordDatetime.setHours(recordHour, recordMin);
+    const recordDatetime = new Date();
     console.log(recordDatetime);
 
     const sessionDatetimeStart = new Date(session.session_date);
@@ -360,15 +356,18 @@ export class StudentService {
           where: { acronym: 'P' },
         },
       );
-      await this.attendanceResultRepository.save(
-        this.attendanceResultRepository.create({
+      await this.attendanceResultRepository
+        .createQueryBuilder()
+        .insert()
+        .into(AttendanceResultEntity)
+        .values({
           t_attendance_session_id: session.id,
           t_student_id: studentId,
           m_attendance_status_id: presentStatus.id,
-          record_time: recordDatetime.toString(),
+          record_time: () => 'NOW()',
           // ip_address: ipAddr,
-        }),
-      );
+        })
+        .execute();
     }
 
     if (
@@ -378,15 +377,22 @@ export class StudentService {
       const lateStatus = await this.attendanceStatusRepository.findOneOrFail({
         where: { acronym: 'L' },
       });
-      await this.attendanceResultRepository.save(
-        this.attendanceResultRepository.create({
+      await this.attendanceResultRepository
+        .createQueryBuilder()
+        .insert()
+        .into(AttendanceResultEntity)
+        .values({
           t_attendance_session_id: session.id,
           t_student_id: studentId,
           m_attendance_status_id: lateStatus.id,
-          record_time: recordDatetime.toString(),
+          record_time: () => 'NOW()',
           // ip_address: ipAddr,
-        }),
-      );
+        })
+        .execute();
     }
+
+    return await this.attendanceResultRepository.findOne({
+      where: { t_attendance_session_id: session.id, t_student_id: studentId },
+    });
   }
 }
