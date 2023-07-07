@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -189,6 +190,25 @@ export class TeacherController {
       id,
       parseInt(courseId),
       parseInt(sessionId),
+    );
+  }
+
+  @Put('course/:courseId/session/:sessionId/bulk-update-status')
+  @UseGuards(TeacherAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  bulkUpdateAttendanceSessionResult(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Param('sessionId') sessionId: string,
+    @Body('listToUpdate')
+    listToUpdate: { studentId: number; statusId: number }[],
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.bulkUpdateAttendanceSessionResult(
+      id,
+      parseInt(courseId),
+      parseInt(sessionId),
+      listToUpdate,
     );
   }
 }

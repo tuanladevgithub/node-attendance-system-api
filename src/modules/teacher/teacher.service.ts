@@ -504,4 +504,53 @@ export class TeacherService {
 
     return token;
   }
+
+  async bulkUpdateAttendanceSessionResult(
+    teacherId: number,
+    courseId: number,
+    sessionId: number,
+    listToUpdate: { studentId: number; statusId: number }[],
+  ) {
+    const session = await this.getAttendanceSessionData(
+      teacherId,
+      courseId,
+      sessionId,
+    );
+
+    if (listToUpdate.length > 0) {
+      await this.dataSource.transaction(async (manager) => {
+        for (const { studentId, statusId } of listToUpdate) {
+          const existResult = await manager.findOne(AttendanceResultEntity, {
+            where: {
+              t_student_id: studentId,
+              t_attendance_session_id: session.id,
+            },
+          });
+
+          if (!existResult)
+            await manager.insert(AttendanceResultEntity, {
+              t_student_id: studentId,
+              t_attendance_session_id: session.id,
+              m_attendance_status_id: statusId,
+              record_time: () => 'NOW()',
+              record_by_teacher: 1,
+            });
+          else if (existResult.m_attendance_status_id !== statusId)
+            await manager.update(
+              AttendanceResultEntity,
+              { t_student_id: studentId, t_attendance_session_id: session.id },
+              {
+                m_attendance_status_id: statusId,
+                record_time: () => 'NOW()',
+                record_by_teacher: 1,
+                ip_address: () => 'NULL',
+              },
+            );
+          else continue;
+        }
+      });
+    }
+
+    return true;
+  }
 }
