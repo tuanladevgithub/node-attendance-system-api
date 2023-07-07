@@ -109,7 +109,7 @@ export class StudentController {
       req.ip,
     );
 
-    this.realtimeGateway.pushNotificationStudentTakeRecord();
+    if (result) this.realtimeGateway.pushNotificationStudentTakeRecord(result);
 
     return result;
   }

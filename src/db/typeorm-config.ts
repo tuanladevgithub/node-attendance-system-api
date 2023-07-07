@@ -16,7 +16,7 @@ export const dataSourceOptions: DataSourceOptions = {
   migrationsTableName: 'system_migrations',
   charset: 'utf8mb4_general_ci',
   timezone: '+07:00',
-  logging: ['query', 'error', 'warn'],
+  logging: ['error', 'warn'],
 };
 
 const dataSource = new DataSource(dataSourceOptions);
