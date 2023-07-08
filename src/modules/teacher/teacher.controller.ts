@@ -116,16 +116,43 @@ export class TeacherController {
     );
   }
 
+  @Post('course/:courseId/add-multi-session')
+  @UseGuards(TeacherAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  addMultiAttendanceSession(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+    @Body('listSessionToCreate')
+    listSessionToCreate: CreateAttendanceSessionDto[],
+    // @Body('officialTime') officialTime: number,
+    // @Body('overtime') overtime: number,
+    // @Body('description') description: number,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.addMultiAttendanceSession(
+      id,
+      parseInt(courseId),
+      listSessionToCreate,
+      // officialTime,
+      // overtime,
+      // description,
+    );
+  }
+
   @Get('course/:courseId/session')
   @UseGuards(TeacherAuthGuard)
   getListOfCourseAttendanceSession(
     @Req() req: any,
     @Param('courseId') courseId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     const { id }: JwtTeacherPayload = req['teacher-payload'];
     return this.teacherService.getListOfCourseAttendanceSession(
       id,
       parseInt(courseId),
+      from,
+      to,
     );
   }
 

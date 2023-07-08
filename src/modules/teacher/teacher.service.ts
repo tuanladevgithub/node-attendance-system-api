@@ -384,19 +384,85 @@ export class TeacherService {
     );
   }
 
-  async getListOfCourseAttendanceSession(teacherId: number, courseId: number) {
+  async addMultiAttendanceSession(
+    teacherId: number,
+    courseId: number,
+    listSessionToCreate: CreateAttendanceSessionDto[],
+    // officialTime: number,
+    // overtime: number,
+    // description: number,
+  ) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, t_teacher_id: teacherId },
+    });
+    if (!course) throw new BadRequestException('Course does not exist.');
+
+    await this.dataSource.transaction(async (manager) => {
+      for (const item of listSessionToCreate) {
+        const existSession = await manager
+          .createQueryBuilder(AttendanceSessionEntity, 'session')
+          .where('session.t_course_id = :courseId', { courseId: course.id })
+          .andWhere('session.session_date = :sessionDate', {
+            sessionDate: item.session_date,
+          })
+          .andWhere(
+            new Brackets((qb) => {
+              return qb
+                .where(
+                  '(session.start_hour * 60 + session.start_min) <= :start AND (session.end_hour * 60 + session.end_min) > :start',
+                  { start: item.start_hour * 60 + item.start_min },
+                )
+                .orWhere(
+                  '(session.start_hour * 60 + session.start_min) < :end AND (session.end_hour * 60 + session.end_min) >= :end',
+                  { end: item.end_hour * 60 + item.end_min },
+                );
+            }),
+          )
+          .getOne();
+
+        if (!existSession)
+          await manager.insert(AttendanceSessionEntity, {
+            ...item,
+            t_course_id: course.id,
+          });
+      }
+    });
+
+    return true;
+  }
+
+  async getListOfCourseAttendanceSession(
+    teacherId: number,
+    courseId: number,
+    from?: string,
+    to?: string,
+  ) {
     const course = await this.courseRepository.findOne({
       where: { id: courseId, t_teacher_id: teacherId },
     });
 
     if (!course) throw new BadRequestException('Course does not exist.');
 
-    const sessions = await this.attendanceSessionRepository.find({
-      where: { t_course_id: course.id },
-      order: { created_at: 'DESC' },
-    });
+    // const sessions = await this.attendanceSessionRepository.find({
+    //   where: { t_course_id: course.id, session_date },
+    //   order: { session_date: 'ASC', start_hour: 'ASC', start_min: 'ASC' },
+    // });
 
-    return { course, attendanceSessions: sessions };
+    const query = this.attendanceSessionRepository
+      .createQueryBuilder('session')
+      .where('session.t_course_id = :courseId', { courseId: course.id });
+
+    if (from) query.andWhere('session.session_date >= :from', { from });
+    if (to) query.andWhere('session.session_date <= :to', { to });
+
+    return {
+      course,
+      attendanceSessions: await query
+        .orderBy('session.session_date', 'ASC')
+        .addOrderBy('session.start_hour', 'ASC')
+        .addOrderBy('session.start_min', 'ASC')
+        .getMany(),
+    };
   }
 
   async getAttendanceSessionData(
