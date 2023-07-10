@@ -9,7 +9,7 @@ import { Readable } from 'stream';
 import * as bcrypt from 'bcrypt';
 import { isEmail, isPhoneNumber } from 'class-validator';
 import { StudentEntity } from 'src/db/entities/student.entity';
-import { UserGender } from 'src/types/common.type';
+import { DayOfWeek, UserGender } from 'src/types/common.type';
 import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
@@ -19,6 +19,8 @@ import { CreateStudentDto } from '../student/dto/create-student.dto';
 import { StudentService } from '../student/student.service';
 import { CreateCourseDto } from '../course/dto/create-course.dto';
 import { CourseService } from '../course/course.service';
+import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
+import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
 
 @Injectable()
 export class AdminService {
@@ -46,6 +48,12 @@ export class AdminService {
 
     @InjectRepository(CourseEntity)
     private readonly courseRepository: Repository<CourseEntity>,
+
+    @InjectRepository(CourseScheduleEntity)
+    private readonly courseScheduleRepository: Repository<CourseScheduleEntity>,
+
+    @InjectRepository(CourseParticipationEntity)
+    private readonly courseParticipationRepository: Repository<CourseParticipationEntity>,
   ) {}
 
   getOneById(id: number): Promise<AdminEntity> {
@@ -423,6 +431,12 @@ export class AdminService {
         'subject',
         'subject.id = course.m_subject_id',
       )
+      .leftJoinAndMapOne(
+        'course.teacher',
+        TeacherEntity,
+        'teacher',
+        'teacher.id = course.t_teacher_id',
+      )
       .loadRelationCountAndMap(
         'course.countStudents',
         'course.courseParticipation',
@@ -450,9 +464,74 @@ export class AdminService {
     return query.getMany();
   }
 
-  async importCoursesFromCsv(file: Express.Multer.File) {
-    console.log(file);
+  async importSubjectsFromCsv(file: Express.Multer.File) {
+    const subjectCodes = (
+      await this.subjectRepository.find({
+        select: ['subject_code'],
+      })
+    ).map((subject) => subject.subject_code);
+    if (!file) throw new BadRequestException('File is required.');
+    const { buffer } = file;
+    const fileStream = Readable.from(buffer);
+    const parseCsv = fileStream.pipe(
+      parse({
+        bom: true,
+        columns: true,
+        trim: true,
+        quote: '"',
+        skip_empty_lines: true,
+      }),
+    );
+    const records: SubjectEntity[] = [];
+    const errors: string[] = [];
 
+    let lineNumber = 2;
+    for await (const _record of parseCsv) {
+      const recordErrors: string[] = [];
+
+      // check subject_code:
+      const subject_code = _record['subject_code'];
+      if (!subject_code) recordErrors.push('subject_code is missing');
+      if (
+        subject_code &&
+        records.findIndex((record) => record.subject_code === subject_code) !==
+          -1
+      )
+        recordErrors.push(`duplicate subject_code in file`);
+      if (
+        subject_code &&
+        subjectCodes.findIndex(
+          (subjectCode) => subjectCode === subject_code,
+        ) !== -1
+      )
+        recordErrors.push(`subject_code "${subject_code}" is exist`);
+
+      // check subject_name:
+      const subject_name = _record['subject_name'];
+
+      if (recordErrors.length > 0)
+        errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
+
+      if (recordErrors.length === 0)
+        records.push(
+          this.subjectRepository.create({
+            subject_code,
+            subject_name,
+          }),
+        );
+
+      lineNumber++;
+    }
+
+    if (errors.length > 0) {
+      return { isSuccess: false, errors };
+    } else {
+      await this.subjectRepository.insert(records);
+      return { isSuccess: true, errors: [] };
+    }
+  }
+
+  async importCoursesFromCsv(file: Express.Multer.File) {
     const subjectIds = (
       await this.subjectRepository.find({ select: ['id'] })
     ).map((subject) => subject.id);
@@ -522,6 +601,7 @@ export class AdminService {
 
       // check end_date:
       const end_date = _record['end_date'];
+      if (!end_date) recordErrors.push('end_date is missing');
 
       if (recordErrors.length > 0)
         errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
@@ -545,6 +625,277 @@ export class AdminService {
       return { isSuccess: false, errors };
     } else {
       await this.courseRepository.insert(records);
+      return { isSuccess: true, errors: [] };
+    }
+  }
+
+  async importCourseSchedulesFromCsv(file: Express.Multer.File) {
+    const courses = await this.courseRepository.find({
+      select: ['id', 'teacher'],
+      relations: { teacher: true },
+    });
+    const schedules = await this.courseScheduleRepository.find();
+    if (!file) throw new BadRequestException('File is required.');
+    const { buffer } = file;
+    const fileStream = Readable.from(buffer);
+    const parseCsv = fileStream.pipe(
+      parse({
+        bom: true,
+        columns: true,
+        trim: true,
+        quote: '"',
+        skip_empty_lines: true,
+      }),
+    );
+    const records: { line: number; schedule: CourseScheduleEntity }[] = [];
+    const errors: string[] = [];
+
+    let lineNumber = 2;
+    for await (const _record of parseCsv) {
+      const recordErrors: string[] = [];
+
+      // check t_course_id:
+      const t_course_id = _record['t_course_id'];
+      if (!t_course_id) recordErrors.push('t_course_id is missing');
+      else {
+        if (isNaN(parseInt(t_course_id)))
+          recordErrors.push(`t_course_id must be a positive integer`);
+        else if (!courses.find((course) => course.id === parseInt(t_course_id)))
+          recordErrors.push(`t_course_id is not exist`);
+      }
+
+      // check day_of_week:
+      const day_of_week = _record['day_of_week'];
+      if (!day_of_week) recordErrors.push('day_of_week is missing');
+      else {
+        if (!Object.values(DayOfWeek).includes(parseInt(day_of_week)))
+          recordErrors.push(
+            `day_of_week must be of 0, 1, 2, 3, 4, 5 or 6 (0 corresponds to Sunday, 6 corresponds to Saturday)`,
+          );
+      }
+
+      // check start_hour:
+      let isValidStartTime = true;
+      const start_hour = _record['start_hour'];
+      if (!start_hour) {
+        recordErrors.push('start_hour is missing');
+        isValidStartTime = false;
+      } else {
+        if (
+          isNaN(parseInt(start_hour)) ||
+          parseInt(start_hour) < 0 ||
+          parseInt(start_hour) > 23
+        ) {
+          recordErrors.push(`start_hour must be an integer between 0 and 23`);
+          isValidStartTime = false;
+        }
+      }
+
+      // check start_min:
+      const start_min = _record['start_min'];
+      if (!start_min) {
+        recordErrors.push('start_min is missing');
+        isValidStartTime = false;
+      } else {
+        if (
+          isNaN(parseInt(start_min)) ||
+          parseInt(start_min) < 0 ||
+          parseInt(start_min) > 59
+        ) {
+          recordErrors.push(`start_min must be an integer between 0 and 59`);
+          isValidStartTime = false;
+        }
+      }
+
+      // check end_hour:
+      let isValidEndTime = true;
+      const end_hour = _record['end_hour'];
+      if (!end_hour) {
+        recordErrors.push('end_hour is missing');
+        isValidEndTime = false;
+      } else {
+        if (
+          isNaN(parseInt(end_hour)) ||
+          parseInt(end_hour) < 0 ||
+          parseInt(end_hour) > 23
+        ) {
+          recordErrors.push(`end_hour must be an integer between 0 and 23`);
+          isValidEndTime = false;
+        }
+      }
+
+      // check end_min:
+      const end_min = _record['end_min'];
+      if (!end_min) {
+        recordErrors.push('end_min is missing');
+        isValidEndTime = false;
+      } else {
+        if (
+          isNaN(parseInt(end_min)) ||
+          parseInt(end_min) < 0 ||
+          parseInt(end_min) > 59
+        ) {
+          recordErrors.push(`end_min must be an integer between 0 and 59`);
+          isValidEndTime = false;
+        }
+      }
+
+      // check conflict time:
+      if (isValidStartTime && isValidEndTime) {
+        if (
+          parseInt(start_hour) * 60 + parseInt(start_min) >=
+          parseInt(end_hour) * 60 + parseInt(end_min)
+        )
+          recordErrors.push(`the start time must be earlier than the end time`);
+        else {
+          const tmpStart = parseInt(start_hour) * 60 + parseInt(start_min);
+          const tmpEnd = parseInt(end_hour) * 60 + parseInt(end_min);
+          const tmp = records.find((record) => {
+            if (
+              record.schedule.t_course_id === parseInt(t_course_id) &&
+              record.schedule.day_of_week === parseInt(day_of_week)
+            ) {
+              const recordStart =
+                record.schedule.start_hour * 60 + record.schedule.start_min;
+              const recordEnd =
+                record.schedule.end_hour * 60 + record.schedule.end_min;
+              if (
+                (recordStart <= tmpStart && recordEnd > tmpStart) ||
+                (recordStart < tmpEnd && recordEnd >= tmpEnd)
+              )
+                return true;
+              else return false;
+            } else return false;
+          });
+
+          if (tmp)
+            recordErrors.push(`conflict time with line number ${tmp.line}`);
+          else {
+            const existSchedule = schedules.find((schedule) => {
+              if (
+                schedule.t_course_id === parseInt(t_course_id) &&
+                schedule.day_of_week === parseInt(day_of_week)
+              ) {
+                const scheduleStart =
+                  schedule.start_hour * 60 + schedule.start_min;
+                const scheduleEnd = schedule.end_hour * 60 + schedule.end_min;
+                if (
+                  (scheduleStart <= tmpStart && scheduleEnd > tmpStart) ||
+                  (scheduleStart < tmpEnd && scheduleEnd >= tmpEnd)
+                )
+                  return true;
+                else return false;
+              } else return false;
+            });
+
+            if (existSchedule)
+              recordErrors.push(
+                `conflict time with exist schedule id ${existSchedule.id}`,
+              );
+          }
+        }
+      }
+
+      if (recordErrors.length > 0)
+        errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
+
+      if (recordErrors.length === 0)
+        records.push({
+          line: lineNumber,
+          schedule: this.courseScheduleRepository.create({
+            t_course_id: parseInt(t_course_id),
+            day_of_week: parseInt(day_of_week),
+            start_hour: parseInt(start_hour),
+            start_min: parseInt(start_min),
+            end_hour: parseInt(end_hour),
+            end_min: parseInt(end_min),
+          }),
+        });
+
+      lineNumber++;
+    }
+
+    if (errors.length > 0) {
+      return { isSuccess: false, errors };
+    } else {
+      await this.courseScheduleRepository.insert(
+        records.map((record) => record.schedule),
+      );
+      return { isSuccess: true, errors: [] };
+    }
+  }
+
+  async importCourseParticipationFromCsv(file: Express.Multer.File) {
+    const courseIds = (
+      await this.courseRepository.find({ select: ['id'] })
+    ).map((course) => course.id);
+    const studentIds = (
+      await this.studentRepository.find({ select: ['id'] })
+    ).map((student) => student.id);
+
+    if (!file) throw new BadRequestException('File is required.');
+    const { buffer } = file;
+    const fileStream = Readable.from(buffer);
+    const parseCsv = fileStream.pipe(
+      parse({
+        bom: true,
+        columns: true,
+        trim: true,
+        quote: '"',
+        skip_empty_lines: true,
+      }),
+    );
+    const records: CourseParticipationEntity[] = [];
+    const errors: string[] = [];
+
+    let lineNumber = 2;
+    for await (const _record of parseCsv) {
+      const recordErrors: string[] = [];
+
+      // check t_course_id:
+      const t_course_id = _record['t_course_id'];
+      if (!t_course_id) recordErrors.push('t_course_id is missing');
+      else {
+        if (t_course_id && isNaN(parseInt(t_course_id)))
+          recordErrors.push(`t_course_id must be a positive integer`);
+        else if (t_course_id && !courseIds.includes(parseInt(t_course_id)))
+          recordErrors.push(`t_course_id is not exist`);
+      }
+
+      // check t_student_id:
+      const t_student_id = _record['t_student_id'];
+      if (!t_student_id) recordErrors.push('t_student_id is missing');
+      else {
+        if (t_student_id && isNaN(parseInt(t_student_id)))
+          recordErrors.push(`t_student_id must be a positive integer`);
+        else if (t_student_id && !studentIds.includes(parseInt(t_student_id)))
+          recordErrors.push(`t_student_id is not exist`);
+      }
+
+      if (recordErrors.length > 0)
+        errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
+
+      if (recordErrors.length === 0)
+        records.push(
+          this.courseParticipationRepository.create({
+            t_course_id: parseInt(t_course_id),
+            t_student_id: parseInt(t_student_id),
+          }),
+        );
+
+      lineNumber++;
+    }
+
+    if (errors.length > 0) {
+      return { isSuccess: false, errors };
+    } else {
+      await this.courseParticipationRepository
+        .createQueryBuilder()
+        .insert()
+        .orIgnore(true)
+        .into(CourseParticipationEntity)
+        .values(records)
+        .execute();
       return { isSuccess: true, errors: [] };
     }
   }

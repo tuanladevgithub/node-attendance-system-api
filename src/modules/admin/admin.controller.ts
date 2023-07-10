@@ -130,6 +130,21 @@ export class AdminController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('upload-subject-csv')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  importSubjectsFromCsv(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'text/csv' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.adminService.importSubjectsFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('upload-course-csv')
   @UseGuards(AdminAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
@@ -142,6 +157,36 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importCoursesFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('upload-course-schedule-csv')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  importCourseSchedulesFromCsv(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'text/csv' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.adminService.importCourseSchedulesFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('upload-course-participation-csv')
+  @UseGuards(AdminAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  importCourseParticipationFromCsv(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: 'text/csv' })],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.adminService.importCourseParticipationFromCsv(file);
   }
 
   @HttpCode(HttpStatus.OK)
