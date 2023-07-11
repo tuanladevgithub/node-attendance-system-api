@@ -129,6 +129,59 @@ export class AdminController {
     return this.adminService.getListOfCourses(subjectId, searchText);
   }
 
+  @Get('course/:courseId')
+  @UseGuards(AdminAuthGuard)
+  getCourseData(@Param('courseId') courseId: number) {
+    return this.adminService.getCourseData(courseId);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('course/:courseId')
+  @UseGuards(AdminAuthGuard)
+  updateCourseData(
+    @Param('courseId') courseId: number,
+    @Body()
+    data: {
+      m_subject_id: number;
+      course_code: string;
+      start_date: string;
+      end_date: string;
+      description?: string;
+    },
+  ) {
+    return this.adminService.updateCourseData(courseId, data);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('course/:courseId/add-schedule')
+  @UseGuards(AdminAuthGuard)
+  addCourseSchedule(
+    @Param('courseId') courseId: number,
+    @Body()
+    data: {
+      day_of_week: number;
+      start_hour: number;
+      start_min: number;
+      end_hour: number;
+      end_min: number;
+    },
+  ) {
+    return this.adminService.addCourseSchedule(courseId, data);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('course/:courseId/delete-schedule')
+  @UseGuards(AdminAuthGuard)
+  deleteSchedule(
+    @Param('courseId') courseId: number,
+    @Body()
+    data: {
+      scheduleId: number;
+    },
+  ) {
+    return this.adminService.deleteSchedule(courseId, data);
+  }
+
   @HttpCode(HttpStatus.OK)
   @Post('upload-subject-csv')
   @UseGuards(AdminAuthGuard)

@@ -464,6 +464,121 @@ export class AdminService {
     return query.getMany();
   }
 
+  getCourseData(courseId: number) {
+    return this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .leftJoinAndMapOne(
+        'course.teacher',
+        TeacherEntity,
+        'teacher',
+        'teacher.id = course.t_teacher_id',
+      )
+      .leftJoinAndMapMany(
+        'course.courseSchedules',
+        CourseScheduleEntity,
+        'schedule',
+        'schedule.t_course_id = course.id',
+      )
+      .loadRelationCountAndMap(
+        'course.countStudents',
+        'course.courseParticipation',
+      )
+      .where('course.id = :courseId', { courseId })
+      .orderBy('schedule.start_hour', 'ASC')
+      .addOrderBy('schedule.start_min', 'ASC')
+      .getOneOrFail();
+  }
+
+  async updateCourseData(
+    courseId: number,
+    data: {
+      m_subject_id: number;
+      course_code: string;
+      start_date: string;
+      end_date: string;
+      description?: string;
+    },
+  ) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+    });
+
+    course.m_subject_id = data.m_subject_id;
+    course.course_code = data.course_code;
+    course.start_date = data.start_date;
+    course.end_date = data.end_date;
+    course.description = data.description;
+
+    return await this.courseRepository.save(course);
+  }
+
+  async addCourseSchedule(
+    courseId: number,
+    data: {
+      day_of_week: number;
+      start_hour: number;
+      start_min: number;
+      end_hour: number;
+      end_min: number;
+    },
+  ) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+    });
+
+    const { day_of_week, start_hour, start_min, end_hour, end_min } = data;
+
+    const schedule = await this.courseScheduleRepository
+      .createQueryBuilder('schedule')
+      .leftJoin(CourseEntity, 'course', 'course.id = schedule.t_course_id')
+      .leftJoin(TeacherEntity, 'teacher', 'teacher.id = course.t_teacher_id')
+      .where('teacher.id = :teacherId', { teacherId: course.t_teacher_id })
+      .andWhere('schedule.day_of_week = :dayOfWeek', {
+        dayOfWeek: `${day_of_week}`,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          return qb
+            .where(
+              '(schedule.start_hour * 60 + schedule.start_min) <= :start AND (schedule.end_hour * 60 + schedule.end_min) > :start',
+              { start: start_hour * 60 + start_min },
+            )
+            .orWhere(
+              '(schedule.start_hour * 60 + schedule.start_min) < :end AND (schedule.end_hour * 60 + schedule.end_min) >= :end',
+              { end: end_hour * 60 + end_min },
+            );
+        }),
+      )
+      .groupBy('schedule.id')
+      .getOne();
+
+    if (schedule)
+      throw new BadRequestException(
+        `Time conflict with the teacher's other schedules.`,
+      );
+
+    return await this.courseScheduleRepository.save(
+      this.courseScheduleRepository.create({
+        t_course_id: course.id,
+        ...data,
+      }),
+    );
+  }
+
+  async deleteSchedule(courseId: number, data: { scheduleId: number }) {
+    await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+    });
+
+    await this.courseScheduleRepository.delete({ id: data.scheduleId });
+  }
+
   async importSubjectsFromCsv(file: Express.Multer.File) {
     const subjectCodes = (
       await this.subjectRepository.find({
