@@ -13,7 +13,11 @@ import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: [
+      'https://sysadmin.aeit.club',
+      'https://teacher.aeit.club',
+      'https://student.aeit.club',
+    ],
   },
   transports: ['websocket'],
 })

@@ -6,8 +6,14 @@ import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.set('trust proxy', true);
-  app.enableCors();
+  // app.set('trust proxy', true);
+  app.enableCors({
+    origin: [
+      'https://sysadmin.aeit.club',
+      'https://teacher.aeit.club',
+      'https://student.aeit.club',
+    ],
+  });
   app.use(cookieParser());
 
   const configService = app.get(ConfigService);
