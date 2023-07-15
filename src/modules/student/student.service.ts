@@ -312,34 +312,30 @@ export class StudentService {
     });
     if (attendanceResult) return attendanceResult;
 
-    // if (ipAddr) {
-    //   const attendanceResultSameIpAddr =
-    //     await this.attendanceResultRepository.findOne({
-    //       where: {
-    //         t_attendance_session_id: session.id,
-    //         record_by_teacher: 0,
-    //         ip_address: ipAddr,
-    //       },
-    //     });
-    //   if (attendanceResultSameIpAddr)
-    //     throw new BadRequestException('Your IP address is duplicated.');
-    // }
+    if (ipAddr) {
+      const attendanceResultSameIpAddr =
+        await this.attendanceResultRepository.findOne({
+          where: {
+            t_attendance_session_id: session.id,
+            record_by_teacher: 0,
+            ip_address: ipAddr,
+          },
+        });
+      if (attendanceResultSameIpAddr)
+        throw new BadRequestException('Your IP address is duplicated.');
+    }
 
     const recordDatetime = new Date();
-    console.log(recordDatetime);
 
     const sessionDatetimeStart = new Date(session.session_date);
     sessionDatetimeStart.setHours(session.start_hour, session.start_min);
-    console.log(sessionDatetimeStart);
 
     const sessionDatetimeEnd = new Date(session.session_date);
     sessionDatetimeEnd.setHours(session.end_hour, session.end_min);
-    console.log(sessionDatetimeEnd);
 
     const sessionDatetimeOvertime = add(sessionDatetimeEnd, {
       minutes: session.overtime_minutes_for_late,
     });
-    console.log(sessionDatetimeOvertime);
 
     if (isBefore(recordDatetime, sessionDatetimeStart))
       throw new BadRequestException('Session has not started.');
@@ -365,7 +361,7 @@ export class StudentService {
           t_student_id: studentId,
           m_attendance_status_id: presentStatus.id,
           record_time: () => 'NOW()',
-          // ip_address: ipAddr,
+          ip_address: ipAddr,
         })
         .execute();
     }
@@ -386,7 +382,7 @@ export class StudentService {
           t_student_id: studentId,
           m_attendance_status_id: lateStatus.id,
           record_time: () => 'NOW()',
-          // ip_address: ipAddr,
+          ip_address: ipAddr,
         })
         .execute();
     }

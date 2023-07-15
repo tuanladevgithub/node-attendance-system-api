@@ -99,6 +99,7 @@ export class StudentController {
   @UseGuards(StudentAuthGuard)
   async recordAttendanceSession(
     @Req() req: Request & { 'student-payload': JwtStudentPayload },
+    @Body('ipAddr') ipAddr: string,
   ) {
     const { id }: JwtStudentPayload = req['student-payload'];
     const qrToken = req.headers['qr-token'] as string;
@@ -109,7 +110,7 @@ export class StudentController {
     const result = await this.studentService.recordAttendanceSession(
       id,
       qrToken,
-      req.ip,
+      ipAddr,
     );
 
     if (result) this.realtimeGateway.pushNotificationStudentTakeRecord(result);

@@ -372,14 +372,14 @@ export class TeacherService {
     return await this.attendanceSessionRepository.save(
       this.attendanceSessionRepository.create({
         t_course_id: course.id,
-        password,
+        password: password ?? this.genRandomPassword(),
         session_date,
         start_hour,
         start_min,
         end_hour,
         end_min,
         overtime_minutes_for_late,
-        description: description || 'Regular class session',
+        description: description ?? 'Regular class session',
       }),
     );
   }
@@ -424,6 +424,7 @@ export class TeacherService {
           await manager.insert(AttendanceSessionEntity, {
             ...item,
             t_course_id: course.id,
+            password: item.password ?? this.genRandomPassword(),
           });
       }
     });
