@@ -564,7 +564,7 @@ export class TeacherService {
       } as JwtQrCodePayload,
       {
         secret: 'QR_SECRET_KEY',
-        expiresIn: '60s',
+        expiresIn: '1m',
       },
     );
 
