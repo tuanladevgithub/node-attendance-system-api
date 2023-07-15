@@ -104,9 +104,6 @@ export class StudentController {
     const { id }: JwtStudentPayload = req['student-payload'];
     const qrToken = req.headers['qr-token'] as string;
 
-    console.log(req.ips);
-    console.log(req.ip);
-
     const result = await this.studentService.recordAttendanceSession(
       id,
       qrToken,
