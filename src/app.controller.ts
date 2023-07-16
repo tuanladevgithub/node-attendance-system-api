@@ -13,7 +13,7 @@ export class AppController {
     this.deviceDetector = new DeviceDetector({
       clientIndexes: true,
       deviceIndexes: true,
-      deviceAliasCode: false,
+      deviceAliasCode: true,
     });
   }
 
