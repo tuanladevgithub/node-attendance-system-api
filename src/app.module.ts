@@ -13,6 +13,7 @@ import { SubjectEntity } from './db/entities/subject.entity';
 import { StudentModule } from './modules/student/student.module';
 import { AttendanceStatusEntity } from './db/entities/attendance-status.entity';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { MailerModule } from './modules/mailer/mailer.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     AdminModule,
     StudentModule,
     RealtimeModule,
+    MailerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
