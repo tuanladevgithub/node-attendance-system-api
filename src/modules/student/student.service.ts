@@ -82,7 +82,7 @@ export class StudentService {
       .select('MAX(student.student_code) as maxStudentCode')
       .getRawOne();
 
-    const genPassword = createStudentDto.password || this.genRandomPassword();
+    const genPassword = createStudentDto.password ?? this.genRandomPassword();
     const hashPassword = await bcrypt.hash(genPassword, 12);
 
     const newStudent = await this.studentRepository.save(

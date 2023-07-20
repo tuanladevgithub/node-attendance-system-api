@@ -40,10 +40,9 @@ export class CourseService {
       this.courseRepository.create({
         m_subject_id: subject.id,
         t_teacher_id: teacher.id,
-        course_code:
-          !currentNewestCourse || !currentNewestCourse.maxCourseCode
-            ? '100001'
-            : parseInt(currentNewestCourse.maxCourseCode) + 1 + '',
+        course_code: !currentNewestCourse?.maxCourseCode
+          ? '100001'
+          : parseInt(currentNewestCourse.maxCourseCode) + 1 + '',
         start_date: createCourseDto.start_date,
         end_date: createCourseDto.end_date,
         description: createCourseDto.description,

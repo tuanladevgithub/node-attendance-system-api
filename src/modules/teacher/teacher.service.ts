@@ -73,7 +73,7 @@ export class TeacherService {
       .select('MAX(teacher.teacher_code) as maxTeacherCode')
       .getRawOne();
 
-    const genPassword = createTeacherDto.password || this.genRandomPassword();
+    const genPassword = createTeacherDto.password ?? this.genRandomPassword();
     const hashPassword = await bcrypt.hash(genPassword, 12);
 
     const newTeacher = await this.teacherRepository.save(

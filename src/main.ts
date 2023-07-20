@@ -17,6 +17,6 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const configService = app.get(ConfigService);
-  await app.listen(parseInt(configService.get('APP_PORT') || '3000'));
+  await app.listen(parseInt(configService.get('APP_PORT') ?? '3000'));
 }
 bootstrap();
