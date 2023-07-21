@@ -14,6 +14,7 @@ import { StudentModule } from './modules/student/student.module';
 import { AttendanceStatusEntity } from './db/entities/attendance-status.entity';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { MailerModule } from './modules/mailer/mailer.module';
+import { RedisCacheModule } from './modules/redis_cache/redis_cache.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MailerModule } from './modules/mailer/mailer.module';
     StudentModule,
     RealtimeModule,
     MailerModule,
+    RedisCacheModule,
   ],
   controllers: [AppController],
   providers: [AppService],
