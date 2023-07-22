@@ -16,6 +16,8 @@ import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { DayOfWeek } from 'src/types/common.type';
 import { JwtService } from '@nestjs/jwt';
 import { JwtQrCodePayload } from 'src/types/qr-code.type';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { CronJob } from 'cron';
 
 @Injectable()
 export class TeacherService {
@@ -23,6 +25,8 @@ export class TeacherService {
     private dataSource: DataSource,
 
     private jwtService: JwtService,
+
+    private schedulerRegistry: SchedulerRegistry,
 
     @InjectRepository(TeacherEntity)
     private readonly teacherRepository: Repository<TeacherEntity>,
@@ -369,7 +373,7 @@ export class TeacherService {
         'The session time is overlapped with another session.',
       );
 
-    return await this.attendanceSessionRepository.save(
+    const result = await this.attendanceSessionRepository.save(
       this.attendanceSessionRepository.create({
         t_course_id: course.id,
         password: password ?? this.genRandomPassword(),
@@ -382,6 +386,20 @@ export class TeacherService {
         description: description ?? 'Regular class session',
       }),
     );
+
+    // add cronjob send mail to students when session start:
+    const datetimeRunJob = new Date(
+      `${session_date}T${start_hour < 10 ? `0${start_hour}` : start_hour}:${
+        start_min < 10 ? `0${start_min}` : start_min
+      }:00+07:00`,
+    );
+    const job = new CronJob(datetimeRunJob, () => {
+      console.log(`session ${result.id} start on ${new Date()}`);
+    });
+    this.schedulerRegistry.addCronJob(`NOTICE_SESSION_START:${result.id}`, job);
+    job.start();
+
+    return result;
   }
 
   async addMultiAttendanceSession(
