@@ -8,7 +8,7 @@ import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
-import { compareAsc } from 'date-fns';
+import { compareAsc, isBefore } from 'date-fns';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
@@ -18,6 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtQrCodePayload } from 'src/types/qr-code.type';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
+import { MailerService } from '../mailer/mailer.service';
 
 @Injectable()
 export class TeacherService {
@@ -26,7 +27,9 @@ export class TeacherService {
 
     private jwtService: JwtService,
 
-    private schedulerRegistry: SchedulerRegistry,
+    private readonly schedulerRegistry: SchedulerRegistry,
+
+    private readonly mailerService: MailerService,
 
     @InjectRepository(TeacherEntity)
     private readonly teacherRepository: Repository<TeacherEntity>,
@@ -388,16 +391,39 @@ export class TeacherService {
     );
 
     // add cronjob send mail to students when session start:
-    const datetimeRunJob = new Date(
+    const noticeJobTime = new Date(
       `${session_date}T${start_hour < 10 ? `0${start_hour}` : start_hour}:${
         start_min < 10 ? `0${start_min}` : start_min
-      }:00+07:00`,
+      }:00`,
     );
-    const job = new CronJob(datetimeRunJob, () => {
-      console.log(`session ${result.id} start on ${new Date()}`);
-    });
-    this.schedulerRegistry.addCronJob(`NOTICE_SESSION_START:${result.id}`, job);
-    job.start();
+    if (isBefore(new Date(), noticeJobTime)) {
+      const jobAction = async () => {
+        console.log(`session ${result.id} start on ${new Date()}`);
+        const studentEmails = (
+          await this.studentRepository
+            .createQueryBuilder('student')
+            .innerJoin(
+              CourseParticipationEntity,
+              'course_participation',
+              'course_participation.t_student_id = student.id',
+            )
+            .where('course_participation.t_course_id = :courseId', { courseId })
+            .getMany()
+        ).map((student) => student.email);
+
+        await this.mailerService.sendMail(
+          studentEmails,
+          'Attendance session notifications',
+          `You have an attendance session to do right now. Please scan the QR code provided by your teacher to do that.\n`,
+        );
+      };
+      const noticeJob = new CronJob(noticeJobTime, jobAction);
+      this.schedulerRegistry.addCronJob(
+        `NOTICE_SESSION_START:${result.id}`,
+        noticeJob,
+      );
+      noticeJob.start();
+    }
 
     return result;
   }
