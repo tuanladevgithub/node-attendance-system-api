@@ -20,7 +20,7 @@ export class CronjobService {
   }
 
   addCronjob(jobName: string) {
-    const job = new CronJob(new Date('2023-07-22 09:35:00'), async () => {
+    const job = new CronJob(new Date('2023-07-22 09:40:00'), async () => {
       console.log('run on: ', new Date());
       await this.mailerService.testSendMail();
     });
