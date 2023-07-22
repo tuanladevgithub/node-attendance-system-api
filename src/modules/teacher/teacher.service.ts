@@ -307,9 +307,16 @@ export class TeacherService {
     courseId: number,
     createAttendanceSessionDto: CreateAttendanceSessionDto,
   ) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId, t_teacher_id: teacherId },
-    });
+    const course = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect(
+        'course.subject',
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .where('course.id = :courseId', { courseId })
+      .andWhere('course.t_teacher_id = :teacherId', { teacherId })
+      .getOne();
     if (!course) throw new BadRequestException('Course does not exist.');
 
     const {
@@ -414,7 +421,17 @@ export class TeacherService {
         await this.mailerService.sendMail(
           studentEmails,
           'Attendance session notifications',
-          `You have an attendance session to do right now. Please scan the QR code provided by your teacher to do that.\n`,
+          `You have an attendance session to do right now. Please scan the QR code provided by your teacher to do that.\nCourse code: ${
+            course.course_code
+          }\nSubject: ${course.subject?.subject_code} - ${
+            course.subject?.subject_name
+          }\nTime: ${session_date} ${
+            start_hour < 10 ? `0${start_hour}` : start_hour
+          }:${start_min < 10 ? `0${start_min}` : start_min} ~ ${
+            end_hour < 10 ? `0${end_hour}` : end_hour
+          }:${end_min < 10 ? `0${end_min}` : end_min}\nOvertime: ${
+            overtime_minutes_for_late ?? 0
+          } mins`,
         );
       };
       const noticeJob = new CronJob(noticeJobTime, jobAction);
@@ -538,13 +555,11 @@ export class TeacherService {
     const course = await this.courseRepository.findOne({
       where: { id: courseId, t_teacher_id: teacherId },
     });
-
     if (!course) throw new BadRequestException('Course does not exist.');
 
     const session = await this.attendanceSessionRepository.findOne({
       where: { id: sessionId, t_course_id: course.id },
     });
-
     if (!session) throw new BadRequestException('Session does not exist.');
 
     await this.dataSource.transaction(async (manager) => {
@@ -553,6 +568,10 @@ export class TeacherService {
       });
 
       await manager.delete(AttendanceSessionEntity, { id: session.id });
+
+      this.schedulerRegistry.deleteCronJob(
+        `NOTICE_SESSION_START:${session.id}`,
+      );
     });
   }
 
