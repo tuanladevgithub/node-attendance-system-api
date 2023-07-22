@@ -429,7 +429,9 @@ export class TeacherService {
             start_hour < 10 ? `0${start_hour}` : start_hour
           }:${start_min < 10 ? `0${start_min}` : start_min} ~ ${
             end_hour < 10 ? `0${end_hour}` : end_hour
-          }:${end_min < 10 ? `0${end_min}` : end_min}\nOvertime: ${
+          }:${
+            end_min < 10 ? `0${end_min}` : end_min
+          } (Asia/Ho_Chi_Minh)\nOvertime: ${
             overtime_minutes_for_late ?? 0
           } mins`,
         );
@@ -569,9 +571,15 @@ export class TeacherService {
 
       await manager.delete(AttendanceSessionEntity, { id: session.id });
 
-      this.schedulerRegistry.deleteCronJob(
-        `NOTICE_SESSION_START:${session.id}`,
-      );
+      if (
+        this.schedulerRegistry.doesExist(
+          'cron',
+          `NOTICE_SESSION_START:${session.id}`,
+        )
+      )
+        this.schedulerRegistry.deleteCronJob(
+          `NOTICE_SESSION_START:${session.id}`,
+        );
     });
   }
 
