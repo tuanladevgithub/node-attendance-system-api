@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { dataSourceOptions } from './db/typeorm-config';
@@ -15,6 +16,7 @@ import { AttendanceStatusEntity } from './db/entities/attendance-status.entity';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { MailerModule } from './modules/mailer/mailer.module';
 import { RedisCacheModule } from './modules/redis_cache/redis_cache.module';
+import { CronjobModule } from './modules/cronjob/cronjob.module';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { RedisCacheModule } from './modules/redis_cache/redis_cache.module';
     TypeOrmModule.forRootAsync({
       useFactory: () => dataSourceOptions,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([
       DepartmentEntity,
       SubjectEntity,
@@ -37,6 +40,7 @@ import { RedisCacheModule } from './modules/redis_cache/redis_cache.module';
     RealtimeModule,
     MailerModule,
     RedisCacheModule,
+    CronjobModule,
   ],
   controllers: [AppController],
   providers: [AppService],
