@@ -8,7 +8,7 @@ import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
-import { compareAsc, isBefore } from 'date-fns';
+import { add, compareAsc, isBefore } from 'date-fns';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
@@ -45,6 +45,9 @@ export class TeacherService {
 
     @InjectRepository(AttendanceSessionEntity)
     private readonly attendanceSessionRepository: Repository<AttendanceSessionEntity>,
+
+    @InjectRepository(AttendanceResultEntity)
+    private readonly attendanceResultRepository: Repository<AttendanceResultEntity>,
   ) {}
 
   getOneById(id: number): Promise<TeacherEntity> {
@@ -444,6 +447,68 @@ export class TeacherService {
       noticeJob.start();
     }
 
+    // add cronjob update result session and send mail to students when session ended:
+    const sessionEndTime = add(
+      new Date(
+        `${session_date}T${end_hour < 10 ? `0${end_hour}` : end_hour}:${
+          end_min < 10 ? `0${end_min}` : end_min
+        }:00`,
+      ),
+      { minutes: overtime_minutes_for_late },
+    );
+    if (isBefore(new Date(), sessionEndTime)) {
+      const jobAction = async () => {
+        console.log(`session ${result.id} end on ${new Date()}`);
+        const students = await this.studentRepository
+          .createQueryBuilder('student')
+          .innerJoin(
+            CourseParticipationEntity,
+            'course_participation',
+            'course_participation.t_student_id = student.id',
+          )
+          .where('course_participation.t_course_id = :courseId', { courseId })
+          .getMany();
+
+        await this.attendanceResultRepository
+          .createQueryBuilder()
+          .insert()
+          .orIgnore(true)
+          .into(AttendanceResultEntity)
+          .values(
+            students.map((student) => ({
+              t_attendance_session_id: result.id,
+              t_student_id: student.id,
+              m_attendance_status_id: 4,
+              record_time: () => 'NOW()',
+              record_by_teacher: 1,
+            })),
+          )
+          .execute();
+
+        const studentEmails = students.map((student) => student.email);
+        await this.mailerService.sendMail(
+          studentEmails,
+          'Attendance session notifications',
+          `Your attendance session has just ended. Visit url: http://abc.com to see the results.\nCourse code: ${
+            course.course_code
+          }\nSubject: ${course.subject?.subject_code} - ${
+            course.subject?.subject_name
+          }\nTime: ${session_date} ${
+            start_hour < 10 ? `0${start_hour}` : start_hour
+          }:${start_min < 10 ? `0${start_min}` : start_min} ~ ${
+            end_hour < 10 ? `0${end_hour}` : end_hour
+          }:${
+            end_min < 10 ? `0${end_min}` : end_min
+          } (Asia/Ho_Chi_Minh)\nOvertime: ${
+            overtime_minutes_for_late ?? 0
+          } mins`,
+        );
+      };
+      const job = new CronJob(sessionEndTime, jobAction);
+      this.schedulerRegistry.addCronJob(`NOTICE_SESSION_END:${result.id}`, job);
+      job.start();
+    }
+
     return result;
   }
 
@@ -579,6 +644,16 @@ export class TeacherService {
       )
         this.schedulerRegistry.deleteCronJob(
           `NOTICE_SESSION_START:${session.id}`,
+        );
+
+      if (
+        this.schedulerRegistry.doesExist(
+          'cron',
+          `NOTICE_SESSION_END:${session.id}`,
+        )
+      )
+        this.schedulerRegistry.deleteCronJob(
+          `NOTICE_SESSION_END:${session.id}`,
         );
     });
   }
