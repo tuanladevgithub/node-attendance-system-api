@@ -404,12 +404,12 @@ export class TeacherService {
     );
 
     // add cronjob send mail to students when session start:
-    const noticeJobTime = new Date(
+    const sessionStartTime = new Date(
       `${session_date}T${start_hour < 10 ? `0${start_hour}` : start_hour}:${
         start_min < 10 ? `0${start_min}` : start_min
       }:00`,
     );
-    if (isBefore(new Date(), noticeJobTime)) {
+    if (isBefore(new Date(), sessionStartTime)) {
       const jobAction = async () => {
         console.log(`session ${result.id} start on ${new Date()}`);
         const studentEmails = (
@@ -442,7 +442,7 @@ export class TeacherService {
           } mins`,
         );
       };
-      const noticeJob = new CronJob(noticeJobTime, jobAction);
+      const noticeJob = new CronJob(sessionStartTime, jobAction);
       this.schedulerRegistry.addCronJob(
         `NOTICE_SESSION_START:${result.id}`,
         noticeJob,
@@ -555,12 +555,145 @@ export class TeacherService {
           )
           .getOne();
 
-        if (!existSession)
-          await manager.insert(AttendanceSessionEntity, {
-            ...item,
-            t_course_id: course.id,
-            password: item.password ?? this.genRandomPassword(),
-          });
+        if (!existSession) {
+          const result = await manager.save(
+            AttendanceSessionEntity,
+            manager.create(AttendanceSessionEntity, {
+              ...item,
+              t_course_id: course.id,
+              password: item.password ?? this.genRandomPassword(),
+              description: item.description ?? 'Regular class session',
+            }),
+          );
+
+          // add cronjob send mail to students when session start:
+          const sessionStartTime = new Date(
+            `${item.session_date}T${
+              item.start_hour < 10 ? `0${item.start_hour}` : item.start_hour
+            }:${
+              item.start_min < 10 ? `0${item.start_min}` : item.start_min
+            }:00`,
+          );
+          if (isBefore(new Date(), sessionStartTime)) {
+            const jobAction = async () => {
+              console.log(`session ${result.id} start on ${new Date()}`);
+              const studentEmails = (
+                await this.studentRepository
+                  .createQueryBuilder('student')
+                  .innerJoin(
+                    CourseParticipationEntity,
+                    'course_participation',
+                    'course_participation.t_student_id = student.id',
+                  )
+                  .where('course_participation.t_course_id = :courseId', {
+                    courseId,
+                  })
+                  .getMany()
+              ).map((student) => student.email);
+
+              await this.mailerService.sendMail(
+                studentEmails,
+                'Attendance session notifications',
+                `You have an attendance session to do right now. Please scan the QR code provided by your teacher to do that.\nCourse code: ${
+                  course.course_code
+                }\nSubject: ${course.subject?.subject_code} - ${
+                  course.subject?.subject_name
+                }\nTime: ${item.session_date} ${
+                  item.start_hour < 10 ? `0${item.start_hour}` : item.start_hour
+                }:${
+                  item.start_min < 10 ? `0${item.start_min}` : item.start_min
+                } ~ ${
+                  item.end_hour < 10 ? `0${item.end_hour}` : item.end_hour
+                }:${
+                  item.end_min < 10 ? `0${item.end_min}` : item.end_min
+                } (Asia/Ho_Chi_Minh)\nOvertime: ${
+                  item.overtime_minutes_for_late ?? 0
+                } mins`,
+              );
+            };
+            const noticeJob = new CronJob(sessionStartTime, jobAction);
+            this.schedulerRegistry.addCronJob(
+              `NOTICE_SESSION_START:${result.id}`,
+              noticeJob,
+            );
+            noticeJob.start();
+          }
+
+          // add cronjob update result session and send mail to students when session ended:
+          const sessionEndTime = add(
+            new Date(
+              `${item.session_date}T${
+                item.end_hour < 10 ? `0${item.end_hour}` : item.end_hour
+              }:${item.end_min < 10 ? `0${item.end_min}` : item.end_min}:00`,
+            ),
+            { minutes: item.overtime_minutes_for_late },
+          );
+          if (isBefore(new Date(), sessionEndTime)) {
+            const jobAction = async () => {
+              console.log(`session ${result.id} end on ${new Date()}`);
+              const students = await this.studentRepository
+                .createQueryBuilder('student')
+                .innerJoin(
+                  CourseParticipationEntity,
+                  'course_participation',
+                  'course_participation.t_student_id = student.id',
+                )
+                .where('course_participation.t_course_id = :courseId', {
+                  courseId,
+                })
+                .getMany();
+
+              await this.attendanceResultRepository
+                .createQueryBuilder()
+                .insert()
+                .orIgnore(true)
+                .into(AttendanceResultEntity)
+                .values(
+                  students.map((student) => ({
+                    t_attendance_session_id: result.id,
+                    t_student_id: student.id,
+                    m_attendance_status_id: 4,
+                    record_time: () => 'NOW()',
+                    record_by_teacher: 1,
+                  })),
+                )
+                .execute();
+
+              const studentEmails = students.map((student) => student.email);
+              await this.mailerService.sendMail(
+                studentEmails,
+                'Attendance session notifications',
+                `Your attendance session has just ended. Visit url: ${
+                  process.env.STUDENT_SITE_DOMAIN
+                }/course/${course.id}/session/${
+                  result.id
+                } to see the results.\nCourse code: ${
+                  course.course_code
+                }\nSubject: ${course.subject?.subject_code} - ${
+                  course.subject?.subject_name
+                }\nTime: ${item.session_date} ${
+                  item.start_hour < 10 ? `0${item.start_hour}` : item.start_hour
+                }:${
+                  item.start_min < 10 ? `0${item.start_min}` : item.start_min
+                } ~ ${
+                  item.end_hour < 10 ? `0${item.end_hour}` : item.end_hour
+                }:${
+                  item.end_min < 10 ? `0${item.end_min}` : item.end_min
+                } (Asia/Ho_Chi_Minh)\nOvertime: ${
+                  item.overtime_minutes_for_late ?? 0
+                } mins`,
+              );
+
+              this.realtimeGateway.pushNotificationSessionEnd(result);
+            };
+            const job = new CronJob(sessionEndTime, jobAction);
+            this.schedulerRegistry.addCronJob(
+              `NOTICE_SESSION_END:${result.id}`,
+              job,
+            );
+            job.start();
+          }
+        }
       }
     });
 
