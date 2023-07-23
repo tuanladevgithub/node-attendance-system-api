@@ -489,11 +489,13 @@ export class TeacherService {
         await this.mailerService.sendMail(
           studentEmails,
           'Attendance session notifications',
-          `Your attendance session has just ended. Visit url: http://abc.com to see the results.\nCourse code: ${
-            course.course_code
-          }\nSubject: ${course.subject?.subject_code} - ${
-            course.subject?.subject_name
-          }\nTime: ${session_date} ${
+          `Your attendance session has just ended. Visit url: ${
+            process.env.STUDENT_SITE_DOMAIN
+          }/course/${course.id}/session/${
+            result.id
+          } to see the results.\nCourse code: ${course.course_code}\nSubject: ${
+            course.subject?.subject_code
+          } - ${course.subject?.subject_name}\nTime: ${session_date} ${
             start_hour < 10 ? `0${start_hour}` : start_hour
           }:${start_min < 10 ? `0${start_min}` : start_min} ~ ${
             end_hour < 10 ? `0${end_hour}` : end_hour
