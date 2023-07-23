@@ -19,6 +19,7 @@ import { JwtQrCodePayload } from 'src/types/qr-code.type';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { MailerService } from '../mailer/mailer.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
 export class TeacherService {
@@ -30,6 +31,8 @@ export class TeacherService {
     private readonly schedulerRegistry: SchedulerRegistry,
 
     private readonly mailerService: MailerService,
+
+    private readonly realtimeGateway: RealtimeGateway,
 
     @InjectRepository(TeacherEntity)
     private readonly teacherRepository: Repository<TeacherEntity>,
@@ -505,6 +508,8 @@ export class TeacherService {
             overtime_minutes_for_late ?? 0
           } mins`,
         );
+
+        this.realtimeGateway.pushNotificationSessionEnd(result);
       };
       const job = new CronJob(sessionEndTime, jobAction);
       this.schedulerRegistry.addCronJob(`NOTICE_SESSION_END:${result.id}`, job);

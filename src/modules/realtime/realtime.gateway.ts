@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
+import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 
 @WebSocketGateway({
   cors: {
@@ -60,5 +61,9 @@ export class RealtimeGateway
     this.server
       .in(`SESSION_ROOM_${result.t_attendance_session_id}`)
       .emit('student_take_record_session', result);
+  }
+
+  pushNotificationSessionEnd(session: AttendanceSessionEntity) {
+    this.server.in(`SESSION_ROOM_${session.id}`).emit('session_end');
   }
 }
