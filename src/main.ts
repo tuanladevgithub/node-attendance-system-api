@@ -12,6 +12,9 @@ async function bootstrap() {
       'https://sysadmin.aeit.club',
       'https://teacher.aeit.club',
       'https://student.aeit.club',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'http://localhost:3003',
     ],
   });
   app.use(cookieParser());
