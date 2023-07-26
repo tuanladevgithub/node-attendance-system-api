@@ -156,6 +156,19 @@ export class TeacherController {
     );
   }
 
+  @Get('course/:courseId/attendance-history')
+  @UseGuards(TeacherAuthGuard)
+  getCourseAttendanceHistory(
+    @Req() req: any,
+    @Param('courseId') courseId: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.getCourseAttendanceHistory(
+      id,
+      parseInt(courseId),
+    );
+  }
+
   @Get('course/:courseId/session/:sessionId')
   @UseGuards(TeacherAuthGuard)
   @HttpCode(HttpStatus.OK)

@@ -20,6 +20,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { MailerService } from '../mailer/mailer.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity';
 
 @Injectable()
 export class TeacherService {
@@ -731,6 +732,61 @@ export class TeacherService {
         .addOrderBy('session.start_hour', 'ASC')
         .addOrderBy('session.start_min', 'ASC')
         .getMany(),
+    };
+  }
+
+  async getCourseAttendanceHistory(teacherId: number, courseId: number) {
+    const course = await this.getCourseData(teacherId, courseId);
+
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoin(
+        CourseParticipationEntity,
+        'course_participation',
+        'course_participation.t_student_id = student.id',
+      )
+      // .leftJoinAndMapOne(
+      //   'student.sessionResult',
+      //   AttendanceResultEntity,
+      //   'session_result',
+      //   'session_result.t_student_id = student.id AND session_result.t_attendance_session_id = :sessionId',
+      //   { sessionId: session.id },
+      // )
+      .where('course_participation.t_course_id = :courseId', {
+        courseId: course.id,
+      })
+      .getMany();
+
+    const sessions = await this.attendanceSessionRepository
+      .createQueryBuilder('session')
+      .leftJoinAndMapMany(
+        'session.attendanceResults',
+        AttendanceResultEntity,
+        'session_result',
+        'session_result.t_attendance_session_id = session.id',
+      )
+      .leftJoinAndMapOne(
+        'session_result.attendanceStatus',
+        AttendanceStatusEntity,
+        'attendance_status',
+        'attendance_status.id = session_result.m_attendance_status_id',
+      )
+      .where('session.t_course_id = :courseId', { courseId: course.id })
+      .orderBy('session.session_date', 'ASC')
+      .addOrderBy('session.start_hour', 'ASC')
+      .addOrderBy('session.start_min', 'ASC')
+      .getMany();
+
+    // const result = students.map(student => {
+
+    //   return {
+    //     student,
+
+    //   }
+    // })
+    return {
+      students,
+      sessions,
     };
   }
 
