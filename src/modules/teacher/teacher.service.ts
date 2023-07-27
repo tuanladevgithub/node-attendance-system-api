@@ -251,6 +251,9 @@ export class TeacherService {
     teacherId: number,
     courseId: number,
     description?: string,
+    rotate_qrcode_interval_seconds?: number,
+    prevent_student_use_same_address?: number,
+    attendance_rate?: number,
   ) {
     const course = await this.courseRepository.findOneOrFail({
       where: { id: courseId, t_teacher_id: teacherId },
@@ -262,6 +265,15 @@ export class TeacherService {
     });
 
     course.description = description;
+
+    if (rotate_qrcode_interval_seconds !== undefined)
+      course.rotate_qrcode_interval_seconds = rotate_qrcode_interval_seconds;
+
+    if (prevent_student_use_same_address !== undefined)
+      course.prevent_student_use_same_address =
+        prevent_student_use_same_address;
+
+    if (attendance_rate !== undefined) course.attendance_rate = attendance_rate;
 
     return await this.courseRepository.save(course);
   }

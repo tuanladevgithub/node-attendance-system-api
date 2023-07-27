@@ -68,12 +68,20 @@ export class TeacherController {
     @Req() req: any,
     @Param('courseId') courseId: string,
     @Body('description') description?: string,
+    @Body('rotate_qrcode_interval_seconds')
+    rotate_qrcode_interval_seconds?: number,
+    @Body('prevent_student_use_same_address')
+    prevent_student_use_same_address?: number,
+    @Body('attendance_rate') attendance_rate?: number,
   ) {
     const { id }: JwtTeacherPayload = req['teacher-payload'];
     return this.teacherService.updateCourse(
       id,
       parseInt(courseId),
       description,
+      rotate_qrcode_interval_seconds,
+      prevent_student_use_same_address,
+      attendance_rate,
     );
   }
 
