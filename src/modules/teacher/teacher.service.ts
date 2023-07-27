@@ -8,7 +8,7 @@ import { CourseEntity } from 'src/db/entities/course.entity';
 import { SubjectEntity } from 'src/db/entities/subject.entity';
 import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
-import { add, compareAsc, isBefore } from 'date-fns';
+import { add, compareAsc, format, isBefore } from 'date-fns';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
 import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
@@ -21,6 +21,7 @@ import { CronJob } from 'cron';
 import { MailerService } from '../mailer/mailer.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity';
+import { stringify } from 'csv-stringify';
 
 @Injectable()
 export class TeacherService {
@@ -52,6 +53,9 @@ export class TeacherService {
 
     @InjectRepository(AttendanceResultEntity)
     private readonly attendanceResultRepository: Repository<AttendanceResultEntity>,
+
+    @InjectRepository(AttendanceStatusEntity)
+    private readonly attendanceStatusRepository: Repository<AttendanceStatusEntity>,
   ) {}
 
   getOneById(id: number): Promise<TeacherEntity> {
@@ -777,17 +781,71 @@ export class TeacherService {
       .addOrderBy('session.start_min', 'ASC')
       .getMany();
 
-    // const result = students.map(student => {
-
-    //   return {
-    //     student,
-
-    //   }
-    // })
     return {
       students,
       sessions,
     };
+  }
+
+  formatTimeDisplay24Hours(hour: number, min: number) {
+    const hourDisplay = hour < 10 ? `0${hour}` : `${hour}`;
+
+    const minDisplay = min < 10 ? `0${min}` : `${min}`;
+
+    return `${hourDisplay}:${minDisplay}`;
+  }
+
+  async exportCourseAttendanceHistory(teacherId: number, courseId: number) {
+    const { students, sessions } = await this.getCourseAttendanceHistory(
+      teacherId,
+      courseId,
+    );
+
+    const attendanceStatus = await this.attendanceStatusRepository.find();
+
+    const data = students.map((student) => {
+      const _record: { [prop: string]: string } = {
+        'Student ID': student.student_code,
+        Name: student.last_name + ' ' + student.first_name,
+        Email: student.email,
+      };
+
+      const overviewStatus: string[] = [];
+      attendanceStatus.forEach((status) => {
+        const count = sessions.filter((session) =>
+          session.attendanceResults?.find(
+            (result) =>
+              result.t_student_id === student.id &&
+              result.m_attendance_status_id === status.id,
+          ),
+        ).length;
+
+        overviewStatus.push(`${status.acronym}:${count}`);
+      });
+      _record['Overview'] = overviewStatus.join(' ');
+
+      sessions.forEach((session) => {
+        _record[
+          `${format(
+            new Date(session.session_date),
+            'dd MMM yyyy',
+          )} ${this.formatTimeDisplay24Hours(
+            session.start_hour,
+            session.start_min,
+          )}~${this.formatTimeDisplay24Hours(
+            session.end_hour,
+            session.end_min,
+          )}`
+        ] =
+          session.attendanceResults?.find(
+            (result) => result.t_student_id === student.id,
+          )?.attendanceStatus?.acronym ?? '...';
+      });
+
+      return _record;
+    });
+
+    return stringify(data, { header: true });
   }
 
   async getAttendanceSessionData(

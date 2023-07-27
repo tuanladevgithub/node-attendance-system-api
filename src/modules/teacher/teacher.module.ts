@@ -11,6 +11,7 @@ import { StudentEntity } from 'src/db/entities/student.entity';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
 import { RealtimeModule } from '../realtime/realtime.module';
+import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
       CourseParticipationEntity,
       AttendanceSessionEntity,
       AttendanceResultEntity,
+      AttendanceStatusEntity,
     ]),
     RealtimeModule,
   ],

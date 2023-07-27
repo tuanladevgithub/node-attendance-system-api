@@ -11,6 +11,8 @@ import {
   Put,
   Query,
   Req,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import { TeacherService } from './teacher.service';
@@ -19,6 +21,7 @@ import { TeacherAuthGuard } from '../auth/teacher-auth.guard';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { CreateAttendanceSessionDto } from './dto/create-attendance-session.dto';
 import { DayOfWeek } from 'src/types/common.type';
+import { Response } from 'express';
 
 @Controller('teacher')
 export class TeacherController {
@@ -167,6 +170,25 @@ export class TeacherController {
       id,
       parseInt(courseId),
     );
+  }
+
+  @Get('course/:courseId/export-history')
+  @UseGuards(TeacherAuthGuard)
+  async exportCourseAttendanceHistory(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+    @Param('courseId') courseId: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    const stringifier = await this.teacherService.exportCourseAttendanceHistory(
+      id,
+      parseInt(courseId),
+    );
+    res.set({
+      'Content-Type': 'text/csv',
+      'Content-Disposition': 'attachment; filename="sample.csv"',
+    });
+    return new StreamableFile(stringifier);
   }
 
   @Get('course/:courseId/session/:sessionId')
