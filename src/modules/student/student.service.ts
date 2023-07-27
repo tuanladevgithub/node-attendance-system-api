@@ -296,6 +296,11 @@ export class StudentService {
       throw new BadRequestException('QR-code invalid or expired.');
     }
 
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) throw new BadRequestException('Course not found.');
+
     const participation = await this.courseParticipationRepository.findOne({
       where: { t_course_id: courseId, t_student_id: studentId },
     });
@@ -303,27 +308,28 @@ export class StudentService {
       throw new ForbiddenException('You cannot access this course.');
 
     const session = await this.attendanceSessionRepository.findOne({
-      where: { t_course_id: courseId, id: sessionId },
+      where: { t_course_id: course.id, id: sessionId },
     });
-    if (!session) throw new BadRequestException('Course not found.');
+    if (!session) throw new BadRequestException('Session not found.');
 
     const attendanceResult = await this.attendanceResultRepository.findOne({
       where: { t_attendance_session_id: session.id, t_student_id: studentId },
     });
     if (attendanceResult) return attendanceResult;
 
-    if (ipAddr) {
-      const attendanceResultSameIpAddr =
-        await this.attendanceResultRepository.findOne({
-          where: {
-            t_attendance_session_id: session.id,
-            record_by_teacher: 0,
-            ip_address: ipAddr,
-          },
-        });
-      if (attendanceResultSameIpAddr)
-        throw new BadRequestException('Your IP address is duplicated.');
-    }
+    if (course.prevent_student_use_same_address)
+      if (ipAddr) {
+        const attendanceResultSameIpAddr =
+          await this.attendanceResultRepository.findOne({
+            where: {
+              t_attendance_session_id: session.id,
+              record_by_teacher: 0,
+              ip_address: ipAddr,
+            },
+          });
+        if (attendanceResultSameIpAddr)
+          throw new BadRequestException('Your IP address is duplicated.');
+      }
 
     const recordDatetime = new Date();
 
