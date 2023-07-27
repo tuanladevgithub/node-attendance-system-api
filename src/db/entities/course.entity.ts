@@ -41,6 +41,27 @@ export class CourseEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'date', name: 'end_date' })
   end_date: string;
 
+  @Column({
+    type: 'int',
+    name: 'rotate_qrcode_interval_seconds',
+    default: 30,
+  })
+  rotate_qrcode_interval_seconds: number;
+
+  @Column({
+    type: 'tinyint',
+    name: 'prevent_student_use_same_address',
+    default: 0,
+  })
+  prevent_student_use_same_address: number;
+
+  @Column({
+    type: 'int',
+    name: 'attendance_rate',
+    default: 80,
+  })
+  attendance_rate: number;
+
   countStudents?: number;
 
   /**

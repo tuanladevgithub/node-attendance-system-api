@@ -15,54 +15,60 @@ export class AttendanceSettingEntity {
   @Column({ type: 'int', name: 't_course_id' })
   t_course_id: number;
 
-  @Column({
-    type: 'tinyint',
-    name: 'allow_students_to_record_own_attendance',
-    default: 1,
-  })
-  allow_students_to_record_own_attendance: number;
+  // @Column({
+  //   type: 'tinyint',
+  //   name: 'allow_students_to_record_own_attendance',
+  //   default: 1,
+  // })
+  // allow_students_to_record_own_attendance: number;
 
   @Column({
     type: 'int',
     name: 'rotate_qrcode_interval_seconds',
-    nullable: true,
-    default: 15,
+    default: 30,
   })
-  rotate_qrcode_interval_seconds?: number;
+  rotate_qrcode_interval_seconds: number;
 
   @Column({
     type: 'tinyint',
     name: 'prevent_student_use_same_address',
-    default: 1,
+    default: 0,
   })
   prevent_student_use_same_address: number;
 
   @Column({
-    type: 'tinyint',
-    name: 'allow_send_email',
-    default: 1,
+    type: 'int',
+    name: 'attendance_rate',
+    default: 80,
   })
-  allow_send_email: number;
+  attendance_rate: number;
 
-  @Column({
-    type: 'varchar',
-    name: 'warning_email_subject',
-    default: 'Warning attendance email',
-  })
-  warning_email_subject: string;
+  // @Column({
+  //   type: 'tinyint',
+  //   name: 'allow_send_email',
+  //   default: 1,
+  // })
+  // allow_send_email: number;
 
-  @Column({ type: 'text', name: 'warning_email_content' })
-  warning_email_content: string;
+  // @Column({
+  //   type: 'varchar',
+  //   name: 'warning_email_subject',
+  //   default: 'Warning attendance email',
+  // })
+  // warning_email_subject: string;
 
-  @Column({
-    type: 'varchar',
-    name: 'notify_email_subject',
-    default: 'Notification attendance email',
-  })
-  notify_email_subject: string;
+  // @Column({ type: 'text', name: 'warning_email_content' })
+  // warning_email_content: string;
 
-  @Column({ type: 'text', name: 'notify_email_content' })
-  notify_email_content: string;
+  // @Column({
+  //   type: 'varchar',
+  //   name: 'notify_email_subject',
+  //   default: 'Notification attendance email',
+  // })
+  // notify_email_subject: string;
+
+  // @Column({ type: 'text', name: 'notify_email_content' })
+  // notify_email_content: string;
 
   /**
    * relations
