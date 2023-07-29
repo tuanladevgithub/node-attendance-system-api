@@ -963,6 +963,8 @@ export class TeacherService {
     courseId: number,
     sessionId: number,
   ) {
+    const course = await this.getCourseData(teacherId, courseId);
+
     const session = await this.getAttendanceSessionData(
       teacherId,
       courseId,
@@ -977,7 +979,7 @@ export class TeacherService {
       } as JwtQrCodePayload,
       {
         secret: 'QR_SECRET_KEY',
-        expiresIn: '1m',
+        expiresIn: `${course.rotate_qrcode_interval_seconds}s`,
       },
     );
 
