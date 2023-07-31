@@ -105,6 +105,85 @@ export class StudentService {
     return newStudent;
   }
 
+  getRecentHistory(studentId: number) {
+    return this.attendanceResultRepository
+      .createQueryBuilder('result')
+      .leftJoinAndSelect(
+        'result.attendanceStatus',
+        'status',
+        'status.id = result.m_attendance_status_id',
+      )
+      .leftJoinAndSelect(
+        'result.attendanceSession',
+        'session',
+        'session.id = result.t_attendance_session_id',
+      )
+      .leftJoinAndSelect(
+        'session.course',
+        'course',
+        'course.id = session.t_course_id',
+      )
+      .leftJoinAndSelect(
+        'course.subject',
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .where('result.t_student_id = :studentId', { studentId })
+      .andWhere('result.m_attendance_status_id IN (:...statusIds)', {
+        statusIds: [1, 2, 3],
+      })
+      .orderBy('result.record_time', 'DESC')
+      .limit(5)
+      .getMany();
+  }
+
+  getRecentAbsences(studentId: number) {
+    return this.attendanceSessionRepository
+      .createQueryBuilder('session')
+      .innerJoinAndSelect(
+        'session.course',
+        'course',
+        'course.id = session.t_course_id',
+      )
+      .innerJoinAndSelect(
+        'course.subject',
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .innerJoin(
+        CourseParticipationEntity,
+        'class',
+        'class.t_course_id = course.id AND class.t_student_id = :studentId',
+        { studentId },
+      )
+      .leftJoin(
+        AttendanceResultEntity,
+        'result',
+        'result.t_attendance_session_id = session.id AND result.t_student_id = :studentId',
+        { studentId },
+      )
+      .where(
+        `
+      (
+        session.session_date < DATE(NOW())
+            OR 
+            (
+          session.session_date = DATE(NOW()) 
+                AND 
+                (session.end_hour * 60 + session.end_min + IF(session.overtime_minutes_for_late IS NULL, 0, session.overtime_minutes_for_late)) <= (HOUR(NOW()) * 60 + MINUTE(NOW()))
+        )
+      )
+      AND 
+        (result.m_attendance_status_id IS NULL OR result.m_attendance_status_id = 4)
+      `,
+      )
+      .orderBy('session.session_date', 'DESC')
+      .addOrderBy('session.start_hour', 'DESC')
+      .addOrderBy('session.start_min', 'DESC')
+      .limit(5)
+      .getMany();
+  }
+
   getListCourse(studentId: number) {
     const query = this.courseRepository
       .createQueryBuilder('course')

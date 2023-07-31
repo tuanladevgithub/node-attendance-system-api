@@ -30,6 +30,20 @@ export class StudentController {
     return result;
   }
 
+  @Get('recent-history')
+  @UseGuards(StudentAuthGuard)
+  getRecentHistory(@Req() req: any) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getRecentHistory(id);
+  }
+
+  @Get('recent-absent')
+  @UseGuards(StudentAuthGuard)
+  getRecentAbsences(@Req() req: any) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.getRecentAbsences(id);
+  }
+
   @Get('course')
   @UseGuards(StudentAuthGuard)
   getListCourse(@Req() req: any) {
