@@ -391,12 +391,14 @@ export class TeacherService {
         new Brackets((qb) => {
           return qb
             .where(
-              '(session.start_hour * 60 + session.start_min) <= :start AND (session.end_hour * 60 + session.end_min) > :start',
+              '(session.start_hour * 60 + session.start_min) <= :start AND (session.end_hour * 60 + session.end_min + IF(session.overtime_minutes_for_late IS NULL, 0, session.overtime_minutes_for_late)) > :start',
               { start: start_hour * 60 + start_min },
             )
             .orWhere(
-              '(session.start_hour * 60 + session.start_min) < :end AND (session.end_hour * 60 + session.end_min) >= :end',
-              { end: end_hour * 60 + end_min },
+              '(session.start_hour * 60 + session.start_min) < :end AND (session.end_hour * 60 + session.end_min + IF(session.overtime_minutes_for_late IS NULL, 0, session.overtime_minutes_for_late)) >= :end',
+              {
+                end: end_hour * 60 + end_min + (overtime_minutes_for_late ?? 0),
+              },
             );
         }),
       )
@@ -561,11 +563,11 @@ export class TeacherService {
             new Brackets((qb) => {
               return qb
                 .where(
-                  '(session.start_hour * 60 + session.start_min) <= :start AND (session.end_hour * 60 + session.end_min) > :start',
+                  '(session.start_hour * 60 + session.start_min) <= :start AND (session.end_hour * 60 + session.end_min + IF(session.overtime_minutes_for_late IS NULL, 0, session.overtime_minutes_for_late)) > :start',
                   { start: item.start_hour * 60 + item.start_min },
                 )
                 .orWhere(
-                  '(session.start_hour * 60 + session.start_min) < :end AND (session.end_hour * 60 + session.end_min) >= :end',
+                  '(session.start_hour * 60 + session.start_min) < :end AND (session.end_hour * 60 + session.end_min + IF(session.overtime_minutes_for_late IS NULL, 0, session.overtime_minutes_for_late)) >= :end',
                   { end: item.end_hour * 60 + item.end_min },
                 );
             }),
