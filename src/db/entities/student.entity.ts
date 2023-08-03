@@ -38,6 +38,21 @@ export class StudentEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'int', name: 'age', nullable: true })
   age?: number;
 
+  @Column({
+    type: 'varchar',
+    name: 'password_reset_code',
+    nullable: true,
+    unique: true,
+  })
+  password_reset_code: string | null;
+
+  @Column({
+    type: 'datetime',
+    name: 'password_reset_expired_at',
+    nullable: true,
+  })
+  password_reset_expired_at: Date | null;
+
   sessionResult?: AttendanceResultEntity;
 
   /**

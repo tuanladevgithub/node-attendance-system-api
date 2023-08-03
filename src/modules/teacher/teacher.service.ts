@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, MoreThan, Repository } from 'typeorm';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
@@ -64,6 +64,41 @@ export class TeacherService {
 
   getOneByEmail(email: string): Promise<TeacherEntity | null> {
     return this.teacherRepository.findOne({ where: { email } });
+  }
+
+  updatePasswordResetCode(
+    teacherId: number,
+    resetCode: string | null,
+    resetCodeExpiredAt: Date | null,
+  ) {
+    return this.teacherRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        password_reset_code: resetCode,
+        password_reset_expired_at: resetCodeExpiredAt,
+      })
+      .where('id = :teacherId', { teacherId })
+      .execute();
+  }
+
+  async resetPassword(resetCode: string, newPassword: string) {
+    const teacher = await this.teacherRepository.findOne({
+      where: {
+        password_reset_code: resetCode,
+        password_reset_expired_at: MoreThan(new Date()),
+      },
+    });
+
+    if (!teacher)
+      throw new BadRequestException('Invalid token or token has expired.');
+
+    const hashPassword = await bcrypt.hash(newPassword, 12);
+
+    teacher.password = hashPassword;
+    teacher.password_reset_code = null;
+    teacher.password_reset_expired_at = null;
+    await this.teacherRepository.save(teacher);
   }
 
   genRandomPassword() {

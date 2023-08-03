@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -22,5 +30,35 @@ export class AuthController {
   @Post('login-admin')
   loginAdmin(@Body('username') username: string, @Body('pass') pass: string) {
     return this.authService.loginAdmin(username, pass);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('send-reset-code-teacher')
+  sendResetCodeTeacher(@Body('email') email: string) {
+    return this.authService.sendResetCodeTeacher(email);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Patch('reset-password-teacher/:resetCode')
+  resetPasswordTeacher(
+    @Param('resetCode') resetCode: string,
+    @Body('newPass') newPass: string,
+  ) {
+    return this.authService.resetPasswordTeacher(resetCode, newPass);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('send-reset-code-student')
+  sendResetCodeStudent(@Body('email') email: string) {
+    return this.authService.sendResetCodeStudent(email);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Patch('reset-password-student/:resetCode')
+  resetPasswordStudent(
+    @Param('resetCode') resetCode: string,
+    @Body('newPass') newPass: string,
+  ) {
+    return this.authService.resetPasswordStudent(resetCode, newPass);
   }
 }

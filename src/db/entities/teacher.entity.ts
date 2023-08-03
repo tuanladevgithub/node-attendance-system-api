@@ -39,6 +39,21 @@ export class TeacherEntity extends BaseCreateUpdateColumnEntity {
   @Column({ type: 'mediumtext', name: 'description', nullable: true })
   description?: string;
 
+  @Column({
+    type: 'varchar',
+    name: 'password_reset_code',
+    nullable: true,
+    unique: true,
+  })
+  password_reset_code: string | null;
+
+  @Column({
+    type: 'datetime',
+    name: 'password_reset_expired_at',
+    nullable: true,
+  })
+  password_reset_expired_at: Date | null;
+
   /**
    * relations
    */

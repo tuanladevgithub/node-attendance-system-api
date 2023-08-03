@@ -14,6 +14,20 @@ export class RedisCacheService {
     this.redisClient.connect();
   }
 
+  setResetPasswordCode(
+    forUser: 'TEACHER' | 'STUDENT',
+    userId: number,
+    token: string,
+  ) {
+    return this.redisClient.set(
+      `RESET_PASSWORD_CODE_${forUser}:${userId}`,
+      token,
+      {
+        EX: 3 * 60,
+      },
+    );
+  }
+
   test() {
     this.redisClient.setEx('abc2', 10, 'dskafjlads');
   }

@@ -1,15 +1,23 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { TeacherService } from '../teacher/teacher.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AdminService } from '../admin/admin.service';
 import { JwtStudentPayload, JwtTeacherPayload } from 'src/types/auth.type';
 import { StudentService } from '../student/student.service';
+import * as crypto from 'crypto';
+import { MailerService } from '../mailer/mailer.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
+
+    private mailerService: MailerService,
 
     private readonly adminService: AdminService,
 
@@ -67,5 +75,85 @@ export class AuthService {
     });
 
     return { accessToken };
+  }
+
+  async sendResetCodeTeacher(email: string) {
+    const teacher = await this.teacherService.getOneByEmail(email);
+
+    if (teacher) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+      try {
+        await this.teacherService.updatePasswordResetCode(
+          teacher.id,
+          passwordResetToken,
+          new Date(Date.now() + 3 * 60 * 1000),
+        );
+
+        await this.mailerService.sendMail(
+          email,
+          'Reset password request',
+          `Hi ${teacher.first_name},\nPlease follow the link bellow to reset your password:\n${process.env.TEACHER_SITE_DOMAIN}/reset-password/${passwordResetToken}\nIf you didn't forget your password. please ignore this email.\n Thank you!`,
+        );
+      } catch (error) {
+        await this.teacherService.updatePasswordResetCode(
+          teacher.id,
+          null,
+          null,
+        );
+
+        throw new InternalServerErrorException(
+          'There was an error sending email.',
+        );
+      }
+    }
+  }
+
+  resetPasswordTeacher(resetCode: string, newPassword: string) {
+    return this.teacherService.resetPassword(resetCode, newPassword);
+  }
+
+  async sendResetCodeStudent(email: string) {
+    const student = await this.studentService.getOneByEmail(email);
+
+    if (student) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+      try {
+        await this.studentService.updatePasswordResetCode(
+          student.id,
+          passwordResetToken,
+          new Date(Date.now() + 3 * 60 * 1000),
+        );
+
+        await this.mailerService.sendMail(
+          email,
+          'Reset password request',
+          `Hi ${student.first_name},\nPlease follow the link bellow to reset your password:\n${process.env.STUDENT_SITE_DOMAIN}/reset-password/${passwordResetToken}\nIf you didn't forget your password. please ignore this email.\n Thank you!`,
+        );
+      } catch (error) {
+        await this.studentService.updatePasswordResetCode(
+          student.id,
+          null,
+          null,
+        );
+
+        throw new InternalServerErrorException(
+          'There was an error sending email.',
+        );
+      }
+    }
+  }
+
+  resetPasswordStudent(resetCode: string, newPassword: string) {
+    return this.studentService.resetPassword(resetCode, newPassword);
   }
 }
