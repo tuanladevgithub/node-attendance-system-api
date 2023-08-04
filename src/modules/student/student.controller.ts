@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -14,6 +15,7 @@ import { JwtStudentPayload } from 'src/types/auth.type';
 import { StudentAuthGuard } from '../auth/student-auth.guard';
 import { Request } from 'express';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { UserGender } from 'src/types/common.type';
 
 @Controller('student')
 export class StudentController {
@@ -28,6 +30,39 @@ export class StudentController {
     const { id }: JwtStudentPayload = req['student-payload'];
     const { password, ...result } = await this.studentService.getOneById(id);
     return result;
+  }
+
+  @Patch('update-info')
+  @UseGuards(StudentAuthGuard)
+  updateStudentInfo(
+    @Req() req: any,
+    @Body('first_name') first_name?: string,
+    @Body('last_name') last_name?: string,
+    @Body('phone_number') phone_number?: string,
+    @Body('gender') gender?: UserGender,
+    @Body('age') age?: number,
+  ) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.updateStudentInfo(
+      id,
+      first_name,
+      last_name,
+      phone_number,
+      gender,
+      age,
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  @UseGuards(StudentAuthGuard)
+  changePassword(
+    @Req() req: any,
+    @Body('curPass') curPass: string,
+    @Body('newPass') newPass: string,
+  ) {
+    const { id }: JwtStudentPayload = req['student-payload'];
+    return this.studentService.changePassword(id, curPass, newPass);
   }
 
   @Get('recent-history')

@@ -35,6 +35,37 @@ export class TeacherController {
     return result;
   }
 
+  @Patch('update-info')
+  @UseGuards(TeacherAuthGuard)
+  updateTeacherInfo(
+    @Req() req: any,
+    @Body('first_name') first_name?: string,
+    @Body('last_name') last_name?: string,
+    @Body('phone_number') phone_number?: string,
+    @Body('description') description?: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.updateTeacherInfo(
+      id,
+      first_name,
+      last_name,
+      phone_number,
+      description,
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  @UseGuards(TeacherAuthGuard)
+  changePassword(
+    @Req() req: any,
+    @Body('curPass') curPass: string,
+    @Body('newPass') newPass: string,
+  ) {
+    const { id }: JwtTeacherPayload = req['teacher-payload'];
+    return this.teacherService.changePassword(id, curPass, newPass);
+  }
+
   @Post('create-new')
   createNewTeacher(@Body() createTeacherDto: CreateTeacherDto) {
     return this.teacherService.createNewTeacher(createTeacherDto);

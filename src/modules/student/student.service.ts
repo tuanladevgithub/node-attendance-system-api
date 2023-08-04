@@ -19,6 +19,7 @@ import { AttendanceStatusEntity } from 'src/db/entities/attendance-status.entity
 import { JwtQrCodePayload } from 'src/types/qr-code.type';
 import { JwtService } from '@nestjs/jwt';
 import { add, isAfter, isBefore, parse } from 'date-fns';
+import { UserGender } from 'src/types/common.type';
 
 @Injectable()
 export class StudentService {
@@ -53,12 +54,48 @@ export class StudentService {
     return this.studentRepository.findOneOrFail({ where: { id } });
   }
 
+  updateStudentInfo(
+    id: number,
+    first_name?: string,
+    last_name?: string,
+    phone_number?: string,
+    gender?: UserGender,
+    age?: number,
+  ) {
+    return this.studentRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        first_name: first_name ?? (() => 'first_name'),
+        last_name: last_name ?? (() => 'last_name'),
+        phone_number,
+        gender: gender ?? (() => 'gender'),
+        age,
+      })
+      .where('id = :id', { id })
+      .execute();
+  }
+
+  async changePassword(id: number, curPass: string, newPass: string) {
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id },
+    });
+
+    if (!(await bcrypt.compare(curPass, student.password)))
+      throw new BadRequestException('The current password is not valid');
+    else
+      await this.studentRepository.update(
+        { id: student.id },
+        { password: await bcrypt.hash(newPass, 12) },
+      );
+  }
+
   getOneByEmail(email: string): Promise<StudentEntity | null> {
     return this.studentRepository.findOne({ where: { email } });
   }
 
   updatePasswordResetCode(
-    teacherId: number,
+    studentId: number,
     resetCode: string | null,
     resetCodeExpiredAt: Date | null,
   ) {
@@ -69,7 +106,7 @@ export class StudentService {
         password_reset_code: resetCode,
         password_reset_expired_at: resetCodeExpiredAt,
       })
-      .where('id = :teacherId', { teacherId })
+      .where('id = :studentId', { studentId })
       .execute();
   }
 

@@ -59,7 +59,49 @@ export class TeacherService {
   ) {}
 
   getOneById(id: number): Promise<TeacherEntity> {
-    return this.teacherRepository.findOneOrFail({ where: { id } });
+    return this.teacherRepository
+      .createQueryBuilder('teacher')
+      .leftJoinAndSelect(
+        'teacher.department',
+        'department',
+        'department.id = teacher.m_department_id',
+      )
+      .where('teacher.id = :teacherId', { teacherId: id })
+      .getOneOrFail();
+  }
+
+  updateTeacherInfo(
+    id: number,
+    first_name?: string,
+    last_name?: string,
+    phone_number?: string,
+    description?: string,
+  ) {
+    return this.teacherRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        first_name: first_name ?? (() => 'first_name'),
+        last_name: last_name ?? (() => 'last_name'),
+        phone_number,
+        description,
+      })
+      .where('id = :id', { id })
+      .execute();
+  }
+
+  async changePassword(id: number, curPass: string, newPass: string) {
+    const teacher = await this.teacherRepository.findOneOrFail({
+      where: { id },
+    });
+
+    if (!(await bcrypt.compare(curPass, teacher.password)))
+      throw new BadRequestException('The current password is not valid');
+    else
+      await this.teacherRepository.update(
+        { id: teacher.id },
+        { password: await bcrypt.hash(newPass, 12) },
+      );
   }
 
   getOneByEmail(email: string): Promise<TeacherEntity | null> {
