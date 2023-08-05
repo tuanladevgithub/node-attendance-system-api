@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AdminEntity } from 'src/db/entities/admin.entity';
 import { DepartmentEntity } from 'src/db/entities/department.entity';
 import { TeacherEntity } from 'src/db/entities/teacher.entity';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
 import * as bcrypt from 'bcrypt';
@@ -21,10 +21,15 @@ import { CreateCourseDto } from '../course/dto/create-course.dto';
 import { CourseService } from '../course/course.service';
 import { CourseScheduleEntity } from 'src/db/entities/course-schedule.entity';
 import { CourseParticipationEntity } from 'src/db/entities/course-participation.entity';
+import { AttendanceSessionEntity } from 'src/db/entities/attendance-session.entity';
+import { AttendanceResultEntity } from 'src/db/entities/attendance-result.entity';
+import { UpdateStudentInfoDto } from './dto/update-student-info.dto';
 
 @Injectable()
 export class AdminService {
   constructor(
+    private dataSource: DataSource,
+
     private readonly teacherService: TeacherService,
 
     private readonly studentService: StudentService,
@@ -274,6 +279,55 @@ export class AdminService {
     return query.getMany();
   }
 
+  async changeTeacherPassword(teacherId: number, newPass: string) {
+    const teacher = await this.teacherRepository.findOneOrFail({
+      where: { id: teacherId },
+    });
+
+    await this.teacherRepository.update(
+      { id: teacher.id },
+      { password: await bcrypt.hash(newPass, 12) },
+    );
+  }
+
+  async deleteTeacher(teacherId: number) {
+    const teacher = await this.teacherRepository.findOneOrFail({
+      where: { id: teacherId },
+    });
+
+    await this.dataSource.transaction(async (manager) => {
+      const courses = await manager.find(CourseEntity, {
+        where: { t_teacher_id: teacher.id },
+      });
+      const courseIds = courses.map((course) => course.id);
+
+      const sessions = await manager.find(AttendanceSessionEntity, {
+        where: { t_course_id: In(courseIds) },
+      });
+      const sessionIds = sessions.map((session) => session.id);
+
+      await manager.delete(AttendanceResultEntity, {
+        t_attendance_session_id: In(sessionIds),
+      });
+
+      await manager.delete(AttendanceSessionEntity, {
+        t_course_id: In(courseIds),
+      });
+
+      await manager.delete(CourseScheduleEntity, {
+        t_course_id: In(courseIds),
+      });
+
+      await manager.delete(CourseParticipationEntity, {
+        t_course_id: In(courseIds),
+      });
+
+      await manager.delete(CourseEntity, { t_teacher_id: teacher.id });
+
+      await manager.delete(TeacherEntity, { id: teacher.id });
+    });
+  }
+
   getListOfStudents(gender?: UserGender, searchText?: string) {
     const query = this.studentRepository.createQueryBuilder('student');
 
@@ -420,6 +474,81 @@ export class AdminService {
 
   createNewStudent(createStudentDto: CreateStudentDto) {
     return this.studentService.createNewStudent(createStudentDto);
+  }
+
+  getStudentInfo(studentId: number) {
+    return this.studentRepository
+      .createQueryBuilder('student')
+      .where('student.id = :studentId', { studentId })
+      .getOneOrFail();
+  }
+
+  async updateStudentInfo(
+    studentId: number,
+    updateStudentInfoDto: UpdateStudentInfoDto,
+  ) {
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id: studentId },
+    });
+
+    await this.studentRepository.update(
+      { id: student.id },
+      updateStudentInfoDto,
+    );
+  }
+
+  getStudentCourse(studentId: number) {
+    const query = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoin(
+        CourseParticipationEntity,
+        'participation',
+        'participation.t_course_id = course.id',
+      )
+      .leftJoinAndMapOne(
+        'course.subject',
+        SubjectEntity,
+        'subject',
+        'subject.id = course.m_subject_id',
+      )
+      .leftJoinAndMapOne(
+        'course.teacher',
+        TeacherEntity,
+        'teacher',
+        'teacher.id = course.t_teacher_id',
+      )
+      .where('participation.t_student_id = :studentId', { studentId });
+
+    return query.getMany();
+  }
+
+  async changeStudentPassword(studentId: number, newPass: string) {
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id: studentId },
+    });
+
+    await this.studentRepository.update(
+      { id: student.id },
+      { password: await bcrypt.hash(newPass, 12) },
+    );
+  }
+
+  async deleteStudent(studentId: number) {
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id: studentId },
+    });
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(AttendanceResultEntity, {
+        t_student_id: student.id,
+      });
+
+      await manager.delete(CourseParticipationEntity, {
+        t_student_id: student.id,
+      });
+
+      await manager.delete(StudentEntity, { id: student.id });
+    });
   }
 
   getListOfCourses(subjectId?: number, searchText?: string) {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   FileTypeValidator,
   Get,
   HttpCode,
@@ -24,6 +25,7 @@ import { UpdateTeacherInfoDto } from './dto/update-teacher-info.dto';
 import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
 import { CreateStudentDto } from '../student/dto/create-student.dto';
 import { CreateCourseDto } from '../course/dto/create-course.dto';
+import { UpdateStudentInfoDto } from './dto/update-student-info.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -89,6 +91,23 @@ export class AdminController {
     return this.adminService.getTeacherCourse(teacherId);
   }
 
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password-teacher/:teacherId')
+  @UseGuards(AdminAuthGuard)
+  changeTeacherPassword(
+    @Param('teacherId') teacherId: number,
+    @Body('newPass') newPass: string,
+  ) {
+    return this.adminService.changeTeacherPassword(teacherId, newPass);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Delete('delete-teacher/:teacherId')
+  @UseGuards(AdminAuthGuard)
+  deleteTeacher(@Param('teacherId') teacherId: number) {
+    return this.adminService.deleteTeacher(teacherId);
+  }
+
   @Get('search-student')
   @UseGuards(AdminAuthGuard)
   getListOfStudents(
@@ -118,6 +137,44 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   createNewStudent(@Body() createStudentDto: CreateStudentDto) {
     return this.adminService.createNewStudent(createStudentDto);
+  }
+
+  @Get('get-student-info/:studentId')
+  @UseGuards(AdminAuthGuard)
+  getStudentInfo(@Param('studentId') studentId: number) {
+    return this.adminService.getStudentInfo(studentId);
+  }
+
+  @Patch('update-student-info/:studentId')
+  @UseGuards(AdminAuthGuard)
+  updateStudentInfo(
+    @Param('studentId') studentId: number,
+    @Body() updateStudentInfoDto: UpdateStudentInfoDto,
+  ) {
+    return this.adminService.updateStudentInfo(studentId, updateStudentInfoDto);
+  }
+
+  @Get('get-student-course/:studentId')
+  @UseGuards(AdminAuthGuard)
+  getStudentCourse(@Param('studentId') studentId: number) {
+    return this.adminService.getStudentCourse(studentId);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password-student/:studentId')
+  @UseGuards(AdminAuthGuard)
+  changeStudentPassword(
+    @Param('studentId') studentId: number,
+    @Body('newPass') newPass: string,
+  ) {
+    return this.adminService.changeStudentPassword(studentId, newPass);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Delete('delete-student/:studentId')
+  @UseGuards(AdminAuthGuard)
+  deleteStudent(@Param('studentId') studentId: number) {
+    return this.adminService.deleteStudent(studentId);
   }
 
   @Get('search-course')
