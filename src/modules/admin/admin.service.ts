@@ -657,13 +657,20 @@ export class AdminService {
       end_min: number;
     },
   ) {
-    const course = await this.courseRepository.findOneOrFail({
-      where: { id: courseId },
-    });
+    const course = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect(
+        'course.courseParticipation',
+        'class',
+        'class.t_course_id = course.id',
+      )
+      .where('course.id = :courseId', { courseId })
+      .getOneOrFail();
 
     const { day_of_week, start_hour, start_min, end_hour, end_min } = data;
 
-    const schedule = await this.courseScheduleRepository
+    // check conflict with teacher schedule:
+    const conflictTeacherSchedule = await this.courseScheduleRepository
       .createQueryBuilder('schedule')
       .leftJoin(CourseEntity, 'course', 'course.id = schedule.t_course_id')
       .leftJoin(TeacherEntity, 'teacher', 'teacher.id = course.t_teacher_id')
@@ -686,11 +693,74 @@ export class AdminService {
       )
       .groupBy('schedule.id')
       .getOne();
-
-    if (schedule)
+    if (conflictTeacherSchedule)
       throw new BadRequestException(
-        `Time conflict with the teacher's other schedules.`,
+        `Conflict with a schedule of teacher (${
+          Object.keys(DayOfWeek)[
+            Object.values(DayOfWeek).indexOf(
+              conflictTeacherSchedule.day_of_week,
+            )
+          ]
+        } from ${this.formatTimeDisplay24Hours(
+          conflictTeacherSchedule.start_hour,
+          conflictTeacherSchedule.start_min,
+        )} to ${this.formatTimeDisplay24Hours(
+          conflictTeacherSchedule.end_hour,
+          conflictTeacherSchedule.end_min,
+        )}).`,
       );
+
+    // check conflict with students schedule:
+    const studentIds = (course.courseParticipation ?? []).map(
+      (item) => item.t_student_id,
+    );
+    if (studentIds.length > 0) {
+      const conflictStudentSchedule = await this.courseScheduleRepository
+        .createQueryBuilder('schedule')
+        .leftJoin(CourseEntity, 'course', 'course.id = schedule.t_course_id')
+        .leftJoin(
+          CourseParticipationEntity,
+          'class',
+          'class.t_course_id = course.id',
+        )
+        .where('class.t_student_id IN (:...studentIds)', {
+          studentIds,
+        })
+        .andWhere('schedule.day_of_week = :dayOfWeek', {
+          dayOfWeek: `${day_of_week}`,
+        })
+        .andWhere(
+          new Brackets((qb) => {
+            return qb
+              .where(
+                '(schedule.start_hour * 60 + schedule.start_min) <= :start AND (schedule.end_hour * 60 + schedule.end_min) > :start',
+                { start: start_hour * 60 + start_min },
+              )
+              .orWhere(
+                '(schedule.start_hour * 60 + schedule.start_min) < :end AND (schedule.end_hour * 60 + schedule.end_min) >= :end',
+                { end: end_hour * 60 + end_min },
+              );
+          }),
+        )
+        .groupBy('schedule.id')
+        .getOne();
+      if (conflictStudentSchedule)
+        throw new BadRequestException(
+          `Conflict with a schedule of student in this course (${
+            Object.keys(DayOfWeek)[
+              Object.values(DayOfWeek).indexOf(
+                conflictStudentSchedule.day_of_week,
+              )
+            ]
+          } from ${this.formatTimeDisplay24Hours(
+            conflictStudentSchedule.start_hour,
+            conflictStudentSchedule.start_min,
+          )} to ${this.formatTimeDisplay24Hours(
+            conflictStudentSchedule.end_hour,
+            conflictStudentSchedule.end_min,
+          )}).`,
+        );
+    }
 
     return await this.courseScheduleRepository.save(
       this.courseScheduleRepository.create({
@@ -706,6 +776,171 @@ export class AdminService {
     });
 
     await this.courseScheduleRepository.delete({ id: data.scheduleId });
+  }
+
+  async getListStudentOfCourse(courseId: number, search?: string) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+    });
+
+    const query = this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoin(
+        CourseParticipationEntity,
+        'course_participation',
+        'course_participation.t_student_id = student.id',
+      )
+      .where('course_participation.t_course_id = :courseId', {
+        courseId: course.id,
+      });
+
+    if (search) {
+      search = search.trim();
+      query.andWhere(
+        new Brackets((qb) =>
+          qb
+            .where('student.student_code LIKE :studentCode', {
+              studentCode: `%${search}%`,
+            })
+            .orWhere('student.email LIKE :email', {
+              email: `%${search}%`,
+            })
+            .orWhere('student.first_name LIKE :firstName', {
+              firstName: `%${search}%`,
+            })
+            .orWhere('student.last_name LIKE :lastName', {
+              lastName: `%${search}%`,
+            })
+            .orWhere('student.phone_number LIKE :phoneNumber', {
+              phoneNumber: `%${search}%`,
+            }),
+        ),
+      );
+    }
+
+    return await query.getMany();
+  }
+
+  async deleteStudentFromCourse(courseId: number, studentId: number) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+    });
+
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id: studentId },
+    });
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(CourseParticipationEntity, {
+        t_student_id: student.id,
+        t_course_id: course.id,
+      });
+
+      const sessions = await manager.find(AttendanceSessionEntity, {
+        where: { t_course_id: course.id },
+      });
+
+      await manager.delete(AttendanceResultEntity, {
+        t_student_id: student.id,
+        t_attendance_session_id: In(sessions.map((session) => session.id)),
+      });
+    });
+  }
+
+  async addStudentToCourse(courseId: number, studentCodeOrEmail: string) {
+    const course = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect(
+        'course.courseSchedules',
+        'schedule',
+        'schedule.t_course_id = course.id',
+      )
+      .where('course.id = :courseId', { courseId })
+      .getOne();
+    if (!course) throw new BadRequestException(`Course isn't exist.`);
+
+    const student = await this.studentRepository
+      .createQueryBuilder('student')
+      .where('student.student_code = :studentCode', {
+        studentCode: studentCodeOrEmail,
+      })
+      .orWhere('student.email = :email', {
+        email: studentCodeOrEmail,
+      })
+      .getOne();
+    if (!student) throw new BadRequestException(`Student isn't exist.`);
+
+    const checkExist = await this.courseParticipationRepository.findOne({
+      where: { t_course_id: course.id, t_student_id: student.id },
+    });
+    if (checkExist)
+      throw new BadRequestException('Student have joined this course.');
+
+    // check schedule conflict:
+    const currentStudentSchedules = await this.courseScheduleRepository
+      .createQueryBuilder('schedule')
+      .leftJoin(CourseEntity, 'course', 'course.id = schedule.t_course_id')
+      .leftJoin(
+        CourseParticipationEntity,
+        'class',
+        'class.t_course_id = course.id',
+      )
+      .where('class.t_student_id = :studentId', { studentId: student.id })
+      .groupBy('schedule.id')
+      .getMany();
+
+    const conflictSchedule = currentStudentSchedules.find((studentSchedule) => {
+      const studentScheduleStart =
+        studentSchedule.start_hour * 60 + studentSchedule.start_min;
+      const studentScheduleEnd =
+        studentSchedule.end_hour * 60 + studentSchedule.end_min;
+
+      const check = (course.courseSchedules ?? []).find((courseSchedule) => {
+        const courseScheduleStart =
+          courseSchedule.start_hour * 60 + courseSchedule.start_min;
+        const courseScheduleEnd =
+          courseSchedule.end_hour * 60 + courseSchedule.end_min;
+
+        return (
+          courseSchedule.day_of_week === studentSchedule.day_of_week &&
+          ((courseScheduleStart <= studentScheduleStart &&
+            courseScheduleEnd > studentScheduleStart) ||
+            (courseScheduleStart < studentScheduleEnd &&
+              courseScheduleEnd >= studentScheduleEnd))
+        );
+      });
+
+      return !!check;
+    });
+    if (conflictSchedule)
+      throw new BadRequestException(
+        `The student has a schedule (${
+          Object.keys(DayOfWeek)[
+            Object.values(DayOfWeek).indexOf(conflictSchedule.day_of_week)
+          ]
+        } from ${this.formatTimeDisplay24Hours(
+          conflictSchedule.start_hour,
+          conflictSchedule.start_min,
+        )} to ${this.formatTimeDisplay24Hours(
+          conflictSchedule.end_hour,
+          conflictSchedule.end_min,
+        )}) that conflict with this course.`,
+      );
+
+    return await this.courseParticipationRepository.save(
+      this.courseParticipationRepository.create({
+        t_course_id: course.id,
+        t_student_id: student.id,
+      }),
+    );
+  }
+
+  formatTimeDisplay24Hours(hour: number, min: number) {
+    const hourDisplay = hour < 10 ? `0${hour}` : `${hour}`;
+
+    const minDisplay = min < 10 ? `0${min}` : `${min}`;
+
+    return `${hourDisplay}:${minDisplay}`;
   }
 
   async importSubjectsFromCsv(file: Express.Multer.File) {

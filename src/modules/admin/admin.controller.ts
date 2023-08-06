@@ -240,6 +240,36 @@ export class AdminController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Get('course/:courseId/student')
+  @UseGuards(AdminAuthGuard)
+  getListStudentOfCourse(
+    @Param('courseId') courseId: number,
+    @Query('search') search?: string,
+  ) {
+    return this.adminService.getListStudentOfCourse(courseId, search);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Delete('course/:courseId/student/:studentId')
+  @UseGuards(AdminAuthGuard)
+  deleteStudentFromCourse(
+    @Param('courseId') courseId: number,
+    @Param('studentId') studentId: number,
+  ) {
+    return this.adminService.deleteStudentFromCourse(courseId, studentId);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('course/:courseId/add-student')
+  @UseGuards(AdminAuthGuard)
+  addStudentToCourse(
+    @Param('courseId') courseId: number,
+    @Body('studentCodeOrEmail') studentCodeOrEmail: string,
+  ) {
+    return this.adminService.addStudentToCourse(courseId, studentCodeOrEmail);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('upload-subject-csv')
   @UseGuards(AdminAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
