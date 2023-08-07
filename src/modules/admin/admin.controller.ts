@@ -12,6 +12,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -26,6 +27,8 @@ import { CreateTeacherDto } from '../teacher/dto/create-teacher.dto';
 import { CreateStudentDto } from '../student/dto/create-student.dto';
 import { CreateCourseDto } from '../course/dto/create-course.dto';
 import { UpdateStudentInfoDto } from './dto/update-student-info.dto';
+import { Response } from 'express';
+import * as path from 'path';
 
 @Controller('admin')
 export class AdminController {
@@ -61,6 +64,14 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importTeachersFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('teacher-data-csv-sample')
+  getTeacherDataCsvSample(@Res() res: Response) {
+    res.sendFile(
+      path.join(__dirname, '../../../src/files_test/teacher-data-sample.csv'),
+    );
   }
 
   @HttpCode(HttpStatus.OK)
@@ -130,6 +141,14 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importStudentsFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('student-data-csv-sample')
+  getStudentDataCsvSample(@Res() res: Response) {
+    res.sendFile(
+      path.join(__dirname, '../../../src/files_test/student-data-sample.csv'),
+    );
   }
 
   @HttpCode(HttpStatus.OK)
@@ -327,6 +346,14 @@ export class AdminController {
     file: Express.Multer.File,
   ) {
     return this.adminService.importCourseParticipationFromCsv(file);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('course-data-csv-sample')
+  getCourseDataCsvSample(@Res() res: Response, @Query('type') type: string) {
+    res.sendFile(
+      path.join(__dirname, `../../../src/files_test/${type}-data-sample.csv`),
+    );
   }
 
   @HttpCode(HttpStatus.OK)

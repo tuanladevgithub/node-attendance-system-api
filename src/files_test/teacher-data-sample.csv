@@ -1,0 +1,2 @@
+m_department_id,teacher_code,email,last_name,first_name,phone_number,description
+"id of department",20230000,"teacher.mail@sample.com",Lastname,Firstname,0123456789,

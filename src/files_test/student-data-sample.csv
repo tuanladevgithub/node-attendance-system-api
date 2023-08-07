@@ -1,0 +1,3 @@
+student_code,email,last_name,first_name,gender,phone_number,age
+20230001,"student1.mail@sample.com",Lastname,Firstname,MALE,0123456789,21
+20230002,"student2.mail@sample.com",Lastname,Firstname,FEMALE,0987654321,18
