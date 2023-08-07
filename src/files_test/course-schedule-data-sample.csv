@@ -1,2 +1,2 @@
-t_course_id,day_of_week,start_hour,start_min,end_hour,end_min
-"id of course","0, 1, 2, 3, 4, 5 or 6 (0 corresponds to Sunday, 6 corresponds to Saturday)","a number from 0 to 23","a number from 0 to 59","a number from 0 to 23","a number from 0 to 59"
+course_code,day_of_week,start_hour,start_min,end_hour,end_min
+"course code","0, 1, 2, 3, 4, 5 or 6 (0 corresponds to Sunday, 6 corresponds to Saturday)","a number from 0 to 23","a number from 0 to 59","a number from 0 to 23","a number from 0 to 59"

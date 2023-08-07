@@ -1,0 +1,12 @@
+m_department_id,teacher_code,email,last_name,first_name,phone_number,description
+1,20230001,"teacher01@sample.com","Lê","Teacher01","0300000001",
+1,20230002,"teacher02@sample.com","Lê","Teacher02","0300000002",
+1,20230003,"teacher03@sample.com","Lê","Teacher03","0300000003",
+1,20230004,"teacher04@sample.com","Lê","Teacher04","0300000004",
+1,20230005,"teacher05@sample.com","Lê","Teacher05","0300000005",
+2,20230006,"teacher06@sample.com","Lê","Teacher06","0300000006",
+2,20230007,"teacher07@sample.com","Lê","Teacher07","0300000007",
+2,20230008,"teacher08@sample.com","Lê","Teacher08","0300000008",
+2,20230009,"teacher09@sample.com","Lê","Teacher09","0300000009",
+2,20230010,"teacher10@sample.com","Lê","Teacher10","0300000010",
+1,20166916,"leanhtuan.th98@gmail.com","Lê","Anh Tuấn",,

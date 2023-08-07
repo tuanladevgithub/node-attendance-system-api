@@ -1011,17 +1011,22 @@ export class AdminService {
   }
 
   async importCoursesFromCsv(file: Express.Multer.File) {
-    const subjectIds = (
-      await this.subjectRepository.find({ select: ['id'] })
-    ).map((subject) => subject.id);
-    const teacherIds = (
-      await this.teacherRepository.find({ select: ['id'] })
-    ).map((teacher) => teacher.id);
+    const subjects = await this.subjectRepository.find({
+      select: ['id', 'subject_code'],
+    });
+    const subjectCodes = subjects.map((subject) => subject.subject_code);
+
+    const teachers = await this.teacherRepository.find({
+      select: ['id', 'teacher_code'],
+    });
+    const teacherCodes = teachers.map((teacher) => teacher.teacher_code);
+
     const courseCodes = (
       await this.courseRepository.find({
         select: ['course_code'],
       })
     ).map((course) => course.course_code);
+
     if (!file) throw new BadRequestException('File is required.');
     const { buffer } = file;
     const fileStream = Readable.from(buffer);
@@ -1041,21 +1046,17 @@ export class AdminService {
     for await (const _record of parseCsv) {
       const recordErrors: string[] = [];
 
-      // check m_subject_id:
-      const m_subject_id = _record['m_subject_id'];
-      if (!m_subject_id) recordErrors.push('m_subject_id is missing');
-      if (m_subject_id && isNaN(parseInt(m_subject_id)))
-        recordErrors.push(`m_subject_id must be a positive integer`);
-      if (m_subject_id && !subjectIds.includes(parseInt(m_subject_id)))
-        recordErrors.push(`m_subject_id is not exist`);
+      // check subject_code:
+      const subject_code = _record['subject_code'];
+      if (!subject_code) recordErrors.push('subject_code is missing');
+      if (subject_code && !subjectCodes.includes(subject_code))
+        recordErrors.push(`subject_code "${subject_code}" is not exist`);
 
-      // check t_teacher_id:
-      const t_teacher_id = _record['t_teacher_id'];
-      if (!t_teacher_id) recordErrors.push('t_teacher_id is missing');
-      if (t_teacher_id && isNaN(parseInt(t_teacher_id)))
-        recordErrors.push(`t_teacher_id must be a positive integer`);
-      if (t_teacher_id && !teacherIds.includes(parseInt(t_teacher_id)))
-        recordErrors.push(`t_teacher_id is not exist`);
+      // check teacher_code:
+      const teacher_code = _record['teacher_code'];
+      if (!teacher_code) recordErrors.push('teacher_code is missing');
+      if (teacher_code && !teacherCodes.includes(teacher_code))
+        recordErrors.push(`teacher_code "${teacher_code}" is not exist`);
 
       // check course_code:
       const course_code = _record['course_code'];
@@ -1085,17 +1086,26 @@ export class AdminService {
       if (recordErrors.length > 0)
         errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
 
-      if (recordErrors.length === 0)
-        records.push(
-          this.courseRepository.create({
-            m_subject_id: parseInt(m_subject_id),
-            t_teacher_id: parseInt(t_teacher_id),
-            course_code,
-            description,
-            start_date,
-            end_date,
-          }),
-        );
+      if (recordErrors.length === 0) {
+        const subjectId = subjects.find(
+          (subject) => subject.subject_code == subject_code,
+        )?.id;
+        const teacherId = teachers.find(
+          (teacher) => teacher.teacher_code == teacher_code,
+        )?.id;
+
+        if (subjectId && teacherId)
+          records.push(
+            this.courseRepository.create({
+              m_subject_id: subjectId,
+              t_teacher_id: teacherId,
+              course_code,
+              description,
+              start_date,
+              end_date,
+            }),
+          );
+      }
 
       lineNumber++;
     }
@@ -1110,10 +1120,12 @@ export class AdminService {
 
   async importCourseSchedulesFromCsv(file: Express.Multer.File) {
     const courses = await this.courseRepository.find({
-      select: ['id', 'teacher'],
-      relations: { teacher: true },
+      select: ['id', 'course_code', 't_teacher_id'],
     });
+    const courseCodes = courses.map((course) => course.course_code);
+
     const schedules = await this.courseScheduleRepository.find();
+
     if (!file) throw new BadRequestException('File is required.');
     const { buffer } = file;
     const fileStream = Readable.from(buffer);
@@ -1133,15 +1145,17 @@ export class AdminService {
     for await (const _record of parseCsv) {
       const recordErrors: string[] = [];
 
-      // check t_course_id:
-      const t_course_id = _record['t_course_id'];
-      if (!t_course_id) recordErrors.push('t_course_id is missing');
+      // check course_code:
+      const course_code = _record['course_code'];
+      if (!course_code) recordErrors.push('course_code is missing');
       else {
-        if (isNaN(parseInt(t_course_id)))
-          recordErrors.push(`t_course_id must be a positive integer`);
-        else if (!courses.find((course) => course.id === parseInt(t_course_id)))
-          recordErrors.push(`t_course_id is not exist`);
+        if (!courseCodes.includes(course_code))
+          recordErrors.push(`course_code "${course_code}" is not exist`);
       }
+      const courseId = courses.find(
+        (course) => course.course_code == course_code,
+      )?.id;
+      if (!courseId) continue;
 
       // check day_of_week:
       const day_of_week = _record['day_of_week'];
@@ -1220,56 +1234,128 @@ export class AdminService {
       }
 
       // check conflict time:
+      // if (isValidStartTime && isValidEndTime) {
+      //   if (
+      //     parseInt(start_hour) * 60 + parseInt(start_min) >=
+      //     parseInt(end_hour) * 60 + parseInt(end_min)
+      //   )
+      //     recordErrors.push(`the start time must be earlier than the end time`);
+      //   else {
+      //     const tmpStart = parseInt(start_hour) * 60 + parseInt(start_min);
+      //     const tmpEnd = parseInt(end_hour) * 60 + parseInt(end_min);
+      //     const tmp = records.find((record) => {
+      //       if (
+      //         record.schedule.t_course_id === parseInt(t_course_id) &&
+      //         record.schedule.day_of_week === parseInt(day_of_week)
+      //       ) {
+      //         const recordStart =
+      //           record.schedule.start_hour * 60 + record.schedule.start_min;
+      //         const recordEnd =
+      //           record.schedule.end_hour * 60 + record.schedule.end_min;
+      //         if (
+      //           (recordStart <= tmpStart && recordEnd > tmpStart) ||
+      //           (recordStart < tmpEnd && recordEnd >= tmpEnd)
+      //         )
+      //           return true;
+      //         else return false;
+      //       } else return false;
+      //     });
+
+      //     if (tmp)
+      //       recordErrors.push(`conflict time with line number ${tmp.line}`);
+      //     else {
+      //       const existSchedule = schedules.find((schedule) => {
+      //         if (
+      //           schedule.t_course_id === parseInt(t_course_id) &&
+      //           schedule.day_of_week === parseInt(day_of_week)
+      //         ) {
+      //           const scheduleStart =
+      //             schedule.start_hour * 60 + schedule.start_min;
+      //           const scheduleEnd = schedule.end_hour * 60 + schedule.end_min;
+      //           if (
+      //             (scheduleStart <= tmpStart && scheduleEnd > tmpStart) ||
+      //             (scheduleStart < tmpEnd && scheduleEnd >= tmpEnd)
+      //           )
+      //             return true;
+      //           else return false;
+      //         } else return false;
+      //       });
+
+      //       if (existSchedule)
+      //         recordErrors.push(
+      //           `conflict time with exist schedule id ${existSchedule.id}`,
+      //         );
+      //     }
+      //   }
+      // }
+
       if (isValidStartTime && isValidEndTime) {
-        if (
-          parseInt(start_hour) * 60 + parseInt(start_min) >=
-          parseInt(end_hour) * 60 + parseInt(end_min)
-        )
+        const tmpStart = parseInt(start_hour) * 60 + parseInt(start_min);
+        const tmpEnd = parseInt(end_hour) * 60 + parseInt(end_min);
+
+        if (tmpStart >= tmpEnd) {
           recordErrors.push(`the start time must be earlier than the end time`);
-        else {
-          const tmpStart = parseInt(start_hour) * 60 + parseInt(start_min);
-          const tmpEnd = parseInt(end_hour) * 60 + parseInt(end_min);
-          const tmp = records.find((record) => {
-            if (
-              record.schedule.t_course_id === parseInt(t_course_id) &&
-              record.schedule.day_of_week === parseInt(day_of_week)
-            ) {
-              const recordStart =
-                record.schedule.start_hour * 60 + record.schedule.start_min;
-              const recordEnd =
-                record.schedule.end_hour * 60 + record.schedule.end_min;
-              if (
-                (recordStart <= tmpStart && recordEnd > tmpStart) ||
-                (recordStart < tmpEnd && recordEnd >= tmpEnd)
-              )
-                return true;
-              else return false;
-            } else return false;
+        } else {
+          // check conflict with teacher schedule in previous records:
+          const tmpTeacherId = courses.find(
+            (course) => course.id === courseId,
+          )?.t_teacher_id;
+          const abc = records.filter((record) => {
+            return (
+              courses.find(
+                (course) => course.id === record.schedule.t_course_id,
+              )?.t_teacher_id === tmpTeacherId
+            );
+          });
+          const checkPrev = abc.find((record) => {
+            const recordStart =
+              record.schedule.start_hour * 60 + record.schedule.start_min;
+            const recordEnd =
+              record.schedule.end_hour * 60 + record.schedule.end_min;
+            return (
+              record.schedule.day_of_week === parseInt(day_of_week) &&
+              ((recordStart <= tmpStart && recordEnd > tmpStart) ||
+                (recordStart < tmpEnd && recordEnd >= tmpEnd))
+            );
           });
 
-          if (tmp)
-            recordErrors.push(`conflict time with line number ${tmp.line}`);
-          else {
-            const existSchedule = schedules.find((schedule) => {
-              if (
-                schedule.t_course_id === parseInt(t_course_id) &&
-                schedule.day_of_week === parseInt(day_of_week)
-              ) {
-                const scheduleStart =
-                  schedule.start_hour * 60 + schedule.start_min;
-                const scheduleEnd = schedule.end_hour * 60 + schedule.end_min;
-                if (
-                  (scheduleStart <= tmpStart && scheduleEnd > tmpStart) ||
-                  (scheduleStart < tmpEnd && scheduleEnd >= tmpEnd)
-                )
-                  return true;
-                else return false;
-              } else return false;
+          if (checkPrev) {
+            recordErrors.push(
+              `conflict with prev teacher schedule in line ${checkPrev.line}`,
+            );
+          } else {
+            // check conflict with current teacher schedule:
+            const curTeacherSchedules = schedules.filter((schedule) => {
+              return (
+                courses.find((course) => course.id === schedule.t_course_id)
+                  ?.t_teacher_id === tmpTeacherId
+              );
             });
 
-            if (existSchedule)
+            const checkConflict = curTeacherSchedules.find((schedule) => {
+              const scheduleStart =
+                schedule.start_hour * 60 + schedule.start_min;
+              const scheduleEnd = schedule.end_hour * 60 + schedule.end_min;
+              return (
+                schedule.day_of_week === parseInt(day_of_week) &&
+                ((scheduleStart <= tmpStart && scheduleEnd > tmpStart) ||
+                  (scheduleStart < tmpEnd && scheduleEnd >= tmpEnd))
+              );
+            });
+
+            if (checkConflict)
               recordErrors.push(
-                `conflict time with exist schedule id ${existSchedule.id}`,
+                `conflict with current teacher schedule (${
+                  Object.keys(DayOfWeek)[
+                    Object.values(DayOfWeek).indexOf(checkConflict.day_of_week)
+                  ]
+                } from ${this.formatTimeDisplay24Hours(
+                  checkConflict.start_hour,
+                  checkConflict.start_min,
+                )} to ${this.formatTimeDisplay24Hours(
+                  checkConflict.end_hour,
+                  checkConflict.end_min,
+                )})`,
               );
           }
         }
@@ -1278,11 +1364,11 @@ export class AdminService {
       if (recordErrors.length > 0)
         errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
 
-      if (recordErrors.length === 0)
+      if (recordErrors.length === 0) {
         records.push({
           line: lineNumber,
           schedule: this.courseScheduleRepository.create({
-            t_course_id: parseInt(t_course_id),
+            t_course_id: courseId,
             day_of_week: parseInt(day_of_week),
             start_hour: parseInt(start_hour),
             start_min: parseInt(start_min),
@@ -1290,6 +1376,7 @@ export class AdminService {
             end_min: parseInt(end_min),
           }),
         });
+      }
 
       lineNumber++;
     }

@@ -1,2 +1,2 @@
-t_course_id,t_student_id
-"id of course","id of student"
+course_code,student_code
+"input course code","inpur student code"

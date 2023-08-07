@@ -1,2 +1,2 @@
-m_subject_id,t_teacher_id,course_code,description,start_date,end_date
-"id of subject","id of classroom teacher",100000,,"YYYY-MM-dd", "YYYY-MM-dd"
+subject_code,teacher_code,course_code,description,start_date,end_date
+"subject code","teacher code of classroom teacher",100000,,"YYYY-MM-dd", "YYYY-MM-dd"
