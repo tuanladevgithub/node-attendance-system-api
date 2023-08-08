@@ -362,4 +362,11 @@ export class AdminController {
   createNewCourse(@Body() createCourseDto: CreateCourseDto) {
     return this.adminService.createNewCourse(createCourseDto);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Delete('delete-course/:courseId')
+  @UseGuards(AdminAuthGuard)
+  deleteCourse(@Param('courseId') courseId: number) {
+    return this.adminService.deleteCourse(courseId);
+  }
 }

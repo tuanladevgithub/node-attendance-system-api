@@ -1576,4 +1576,35 @@ export class AdminService {
   createNewCourse(createCourseDto: CreateCourseDto) {
     return this.courseService.createNewCourse(createCourseDto);
   }
+
+  async deleteCourse(courseId: number) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+    });
+
+    await this.dataSource.transaction(async (manager) => {
+      const sessions = await manager.find(AttendanceSessionEntity, {
+        where: { t_course_id: course.id },
+      });
+      const sessionIds = sessions.map((session) => session.id);
+
+      await manager.delete(AttendanceResultEntity, {
+        t_attendance_session_id: In(sessionIds),
+      });
+
+      await manager.delete(AttendanceSessionEntity, {
+        t_course_id: course.id,
+      });
+
+      await manager.delete(CourseScheduleEntity, {
+        t_course_id: course.id,
+      });
+
+      await manager.delete(CourseParticipationEntity, {
+        t_course_id: course.id,
+      });
+
+      await manager.delete(CourseEntity, { id: course.id });
+    });
+  }
 }
