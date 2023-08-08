@@ -1,0 +1,11 @@
+student_code,email,last_name,first_name,gender,phone_number,age
+20230011,"student11@sample.com","Nguyễn","Văn A11",MALE,0800000011,18
+20230012,"student12@sample.com","Nguyễn","Văn A12",MALE,0800000012,18
+20230013,"student13@sample.com","Nguyễn","Văn A13",MALE,0800000013,18
+20230014,"student14@sample.com","Nguyễn","Văn A14",MALE,0800000014,18
+20230015,"student15@sample.com","Nguyễn","Văn A15",MALE,0800000015,18
+20230016,"student16@sample.com","Nguyễn","Văn A16",FEMALE,0800000016,18
+20230017,"student17@sample.com","Nguyễn","Văn A17",FEMALE,0800000017,18
+20230018,"student18@sample.com","Nguyễn","Văn A18",FEMALE,0800000018,18
+20230019,"student19@sample.com","Nguyễn","Văn A19",FEMALE,0800000019,18
+20230020,"student20@sample.com","Nguyễn","Văn A20",FEMALE,0800000020,18
