@@ -1392,12 +1392,19 @@ export class AdminService {
   }
 
   async importCourseParticipationFromCsv(file: Express.Multer.File) {
-    const courseIds = (
-      await this.courseRepository.find({ select: ['id'] })
-    ).map((course) => course.id);
-    const studentIds = (
-      await this.studentRepository.find({ select: ['id'] })
-    ).map((student) => student.id);
+    const courses = await this.courseRepository.find({
+      select: ['id', 'course_code'],
+    });
+    const courseCodes = courses.map((course) => course.course_code);
+
+    const students = await this.studentRepository.find({
+      select: ['id', 'student_code'],
+    });
+    const studentCodes = students.map((student) => student.student_code);
+
+    const schedules = await this.courseScheduleRepository.find();
+
+    const classes = await this.courseParticipationRepository.find();
 
     if (!file) throw new BadRequestException('File is required.');
     const { buffer } = file;
@@ -1411,43 +1418,143 @@ export class AdminService {
         skip_empty_lines: true,
       }),
     );
-    const records: CourseParticipationEntity[] = [];
+    const records: { line: number; inst: CourseParticipationEntity }[] = [];
     const errors: string[] = [];
 
     let lineNumber = 2;
     for await (const _record of parseCsv) {
       const recordErrors: string[] = [];
 
-      // check t_course_id:
-      const t_course_id = _record['t_course_id'];
-      if (!t_course_id) recordErrors.push('t_course_id is missing');
+      // check course_code:
+      const course_code = _record['course_code'];
+      if (!course_code) recordErrors.push('course_code is missing');
       else {
-        if (t_course_id && isNaN(parseInt(t_course_id)))
-          recordErrors.push(`t_course_id must be a positive integer`);
-        else if (t_course_id && !courseIds.includes(parseInt(t_course_id)))
-          recordErrors.push(`t_course_id is not exist`);
+        if (!courseCodes.includes(course_code))
+          recordErrors.push(`course_code "${course_code}" is not exist`);
       }
+      const courseId = courses.find(
+        (course) => course.course_code == course_code,
+      )?.id;
+      if (!courseId) continue;
 
-      // check t_student_id:
-      const t_student_id = _record['t_student_id'];
-      if (!t_student_id) recordErrors.push('t_student_id is missing');
+      // check student_code:
+      const student_code = _record['student_code'];
+      if (!student_code) recordErrors.push('student_code is missing');
       else {
-        if (t_student_id && isNaN(parseInt(t_student_id)))
-          recordErrors.push(`t_student_id must be a positive integer`);
-        else if (t_student_id && !studentIds.includes(parseInt(t_student_id)))
-          recordErrors.push(`t_student_id is not exist`);
+        if (!studentCodes.includes(student_code))
+          recordErrors.push(`student_code "${student_code}" is not exist`);
       }
+      const studentId = students.find(
+        (student) => student.student_code == student_code,
+      )?.id;
+      if (!studentId) continue;
+
+      if (
+        records.find(
+          (record) =>
+            record.inst.t_course_id === courseId &&
+            record.inst.t_student_id === studentId,
+        )
+      )
+        continue;
+
+      if (
+        classes.find(
+          (c) => c.t_course_id === courseId && c.t_student_id === studentId,
+        )
+      )
+        continue;
+
+      //
+      const curCourseSchedules = schedules.filter(
+        (schedule) => schedule.t_course_id === courseId,
+      );
+      const curStudentSchedules = schedules.filter((schedule) =>
+        classes
+          .filter((c) => c.t_student_id === studentId)
+          .map((c) => c.t_course_id)
+          .includes(schedule.t_course_id),
+      );
+      const conflictSchedule = curStudentSchedules.find((studentSchedule) => {
+        const studentScheduleStart =
+          studentSchedule.start_hour * 60 + studentSchedule.start_min;
+        const studentScheduleEnd =
+          studentSchedule.end_hour * 60 + studentSchedule.end_min;
+
+        const check = curCourseSchedules.find((courseSchedule) => {
+          const courseScheduleStart =
+            courseSchedule.start_hour * 60 + courseSchedule.start_min;
+          const courseScheduleEnd =
+            courseSchedule.end_hour * 60 + courseSchedule.end_min;
+
+          return (
+            courseSchedule.day_of_week === studentSchedule.day_of_week &&
+            ((courseScheduleStart <= studentScheduleStart &&
+              courseScheduleEnd > studentScheduleStart) ||
+              (courseScheduleStart < studentScheduleEnd &&
+                courseScheduleEnd >= studentScheduleEnd))
+          );
+        });
+
+        return !!check;
+      });
+      if (conflictSchedule)
+        recordErrors.push(`student and course conflict schedule time`);
+
+      //
+      const prev = schedules.filter((schedule) =>
+        records
+          .filter((record) => record.inst.t_student_id === studentId)
+          .map((record) => record.inst.t_course_id)
+          .includes(schedule.t_course_id),
+      );
+      const conflictPrevSchedule = prev.find((studentSchedule) => {
+        const studentScheduleStart =
+          studentSchedule.start_hour * 60 + studentSchedule.start_min;
+        const studentScheduleEnd =
+          studentSchedule.end_hour * 60 + studentSchedule.end_min;
+
+        const check = curCourseSchedules.find((courseSchedule) => {
+          const courseScheduleStart =
+            courseSchedule.start_hour * 60 + courseSchedule.start_min;
+          const courseScheduleEnd =
+            courseSchedule.end_hour * 60 + courseSchedule.end_min;
+
+          return (
+            courseSchedule.day_of_week === studentSchedule.day_of_week &&
+            ((courseScheduleStart <= studentScheduleStart &&
+              courseScheduleEnd > studentScheduleStart) ||
+              (courseScheduleStart < studentScheduleEnd &&
+                courseScheduleEnd >= studentScheduleEnd))
+          );
+        });
+
+        return !!check;
+      });
+      if (conflictPrevSchedule)
+        recordErrors.push(
+          `conflict course schedule with line ${
+            records
+              .filter((record) => record.inst.t_student_id === studentId)
+              .find(
+                (record) =>
+                  record.inst.t_course_id === conflictPrevSchedule.t_course_id,
+              )?.line
+          }`,
+        );
 
       if (recordErrors.length > 0)
         errors.push(`Line number ${lineNumber}: ${recordErrors.join(', ')}`);
 
-      if (recordErrors.length === 0)
-        records.push(
-          this.courseParticipationRepository.create({
-            t_course_id: parseInt(t_course_id),
-            t_student_id: parseInt(t_student_id),
+      if (recordErrors.length === 0) {
+        records.push({
+          line: lineNumber,
+          inst: this.courseParticipationRepository.create({
+            t_course_id: courseId,
+            t_student_id: studentId,
           }),
-        );
+        });
+      }
 
       lineNumber++;
     }
@@ -1460,7 +1567,7 @@ export class AdminService {
         .insert()
         .orIgnore(true)
         .into(CourseParticipationEntity)
-        .values(records)
+        .values(records.map((record) => record.inst))
         .execute();
       return { isSuccess: true, errors: [] };
     }
